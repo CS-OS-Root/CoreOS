@@ -422,6 +422,21 @@ mla_bool_t mla_array_list_contains(const mla_array_list_t<T, TInit>& list, const
 }
 
 template <mla_array_list_template>
+inline void mla_array_list_add_unique(mla_array_list_t<T, TInit>& list, const T& item) {
+    if (!mla_array_list_contains(list, item)) {
+        mla_array_list_add(list, item);
+    }
+}
+
+template <mla_array_list_template>
+inline void mla_private_sandbox_add_candidate_unique(mla_array_list_t<T, TInit>& candidates, const T& val) {
+    if (val == TInit::init()) {
+        return;
+    }
+    mla_array_list_add_unique(candidates, val);
+}
+
+template <mla_array_list_template>
 mla_int32_t mla_array_list_index_of(const mla_array_list_t<T, TInit>& list, const T& item) {
 
     T* items = mla_private_array_list_items_data(list);
