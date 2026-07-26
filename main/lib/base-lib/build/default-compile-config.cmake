@@ -99,7 +99,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER MATCHES "fi
     endif()
 
     if(CMAKE_CXX_COMPILER MATCHES "filc" OR CMAKE_C_COMPILER MATCHES "filc")
-        add_compile_options(-Qunused-arguments)
+        add_compile_options(-Qunused-arguments -Dmla_use_stacktraces=0)
     endif()
 
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

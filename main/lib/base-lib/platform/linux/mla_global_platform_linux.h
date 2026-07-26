@@ -14,7 +14,14 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <stdio.h>
+
+#ifndef mla_use_stacktraces
+#define mla_use_stacktraces 1
+#endif
+
+#if mla_use_stacktraces == 1
 #include <execinfo.h>
+#endif
 #include <cxxabi.h>
 #include <dlfcn.h>
 #include <signal.h>
@@ -254,6 +261,7 @@ mla_size_t mla_private_linux_get_stack_trace(mla_char_t* buffer, mla_size_t buff
 
     buffer[0] = '\0';
 
+#if mla_use_stacktraces == 1
     constexpr int max_frames = 64;
     void* frames[max_frames];
     const int frame_count = backtrace(frames, max_frames);
@@ -336,6 +344,9 @@ mla_size_t mla_private_linux_get_stack_trace(mla_char_t* buffer, mla_size_t buff
     }
 
     return written;
+#else
+    return 0;
+#endif
 }
 
 // Initialize low-level memory operations with default implementations
