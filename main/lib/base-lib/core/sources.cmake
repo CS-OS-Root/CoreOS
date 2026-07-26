@@ -32,6 +32,7 @@ set(SOURCE_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/cli/mla_cli_parser.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/cli/mla_cli_app.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/cli/mla_cli_command.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/cli/mla_cli_history.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/system/mla_stream.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/system/mla_stream_helper.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/system/mla_stream_wrapper.cpp

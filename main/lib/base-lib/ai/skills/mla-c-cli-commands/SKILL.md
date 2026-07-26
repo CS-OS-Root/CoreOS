@@ -169,6 +169,39 @@ static mla_bool_t connect_execute(
 }
 ```
 
+## Parameter Value Autocompletion & History (`mla_cli_history`)
+
+Parameter values can be autocompleted during interactive CLI editing by supplying a callback function of type `mla_cli_parameter_value_autocomplete_fn` when creating a command parameter:
+
+```cpp
+#include "../cli/mla_cli_command.h"
+#include "../cli/mla_cli_history.h"
+
+static mla_array_list_t<mla_string_t, mla_string_initializer> my_parameter_autocomplete(
+    const mla_cli_command_t &command,
+    const mla_string_t &parameterName,
+    const mla_string_t &currentValuePrefix,
+    const mla_user_data_t &userData) {
+    (void)command; (void)parameterName; (void)userData;
+
+    // Retrieve history candidates
+    mla_array_list_t<mla_string_t, mla_string_initializer> candidates =
+        mla_cli_history_get_candidates(mla_cli_history_global_store(), mla_string_const("module:cmd:param"), currentValuePrefix);
+
+    // Add static/preset candidates
+    mla_array_list_add(candidates, mla_string_const("preset1"));
+    mla_array_list_add(candidates, mla_string_const("preset2"));
+
+    return mla_cli_parameter_value_autocomplete_filter_candidates(candidates, currentValuePrefix);
+}
+```
+
+On successful command execution, record used parameter values so they are suggested on future tab-completions:
+
+```cpp
+mla_cli_history_record_value(mla_cli_history_global_store(), mla_string_const("module:cmd:param"), param_value);
+```
+
 ## Output Helpers
 
 The `mla_cli_command_execute_outstream_t` struct provides two write functions:
@@ -179,34 +212,9 @@ p_Out.write(p_Out.userdata, mla_string_const("value: "));
 
 // Write a C string literal (no mla_string_t needed)
 p_Out.writeCString(p_Out.userdata, "Done.\n");
-Always end output lines with `\n` for proper terminal display.
-
-## Parameter Value Autocompletion
-
-Parameters can provide autocompletion options for parameter values via `mla_cli_parameter_value_autocomplete_fn`. Fixed list helpers `mla_cli_parameter_value_autocomplete_filter_c_strings` and `mla_cli_parameter_value_autocomplete_filter_candidates` make filtering candidate strings based on current user input prefix simple:
-
-```cpp
-static mla_array_list_t<mla_string_t, mla_string_initializer> format_autocomplete(
-    const mla_cli_command_t &command,
-    const mla_string_t &parameterName,
-    const mla_string_t &currentValuePrefix,
-    const mla_user_data_t &userData) {
-    (void)command; (void)parameterName; (void)userData;
-    const mla_char_t* formats[] = { "json", "xml", "yaml", "csv" };
-    return mla_cli_parameter_value_autocomplete_filter_c_strings(formats, 4, currentValuePrefix);
-}
-
-// Attach callback to parameter
-mla_cli_command_parameter_t formatParam = mla_cli_command_parameter(
-    mla_string_const("format"),
-    mla_string_const("Output format"),
-    true,   // mandatory
-    false,  // isFlag
-    format_autocomplete
-);
-mla_cli_command_add_parameter(cmd, formatParam);
 ```
 
+Always end output lines with `\n` for proper terminal display.
 
 ## Naming Conventions
 
@@ -238,4 +246,3 @@ ctx->doSomething(); // crash if ctx is null
 mla_cli_command_t cmd = mla_cli_command(mla_string_const("status"));
 mla_cli_module_add_command(module, cmd); // cmd.execute is nullptr — will crash on invocation
 ```
-

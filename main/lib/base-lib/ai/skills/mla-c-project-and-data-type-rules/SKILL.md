@@ -223,15 +223,27 @@ struct mla_example_t {
 - Use MLA data types for all fields
 - Operator overloading is allowed (C++ feature)
 
-### 4. Initializers
+### 4. Struct Initializers
 
-Use initializer structs for default initialization in templates:
+Separate `_initializer` structs (e.g., `struct mla_foo_initializer`) are **deprecated**. All structs should define a static `init()` member function directly inside the struct body for default initialization:
+
 ```cpp
-struct mla_string_initializer {
-    static mla_string_t init() {
-        return mla_string_empty();
+struct mla_example_t {
+    mla_size_t length;
+    mla_string_t name;
+
+    static mla_example_t init() {
+        return {
+            0,
+            mla_string_empty()
+        };
     }
 };
+```
+
+For template containers (such as `mla_array_list_t<T, TInit>`), `T` itself can be passed as `TInit` when `T` defines `static T init()` directly on its struct body:
+```cpp
+mla_array_list_t<mla_example_t, mla_example_t> my_list;
 ```
 
 ### 5. Helper Macros and Templates
@@ -314,5 +326,6 @@ The framework uses a centralized configuration system to manage system-wide and 
 - **Always use `mla_pointer_t` for owning heap-allocated data** — it provides automatic reference-counted cleanup via `mla_malloc` / `mla_malloc_struct`.
 - **Use `mla_platform_pointer_t` only for short-lived, non-owning data access** (e.g. passing to `mla_memcpy`). Never store it as a long-lived owner.
 - **Never call `mla_platform_free` on memory allocated through `mla_malloc` / `mla_malloc_struct`** — the `mla_pointer_memory_manager_t` handles deallocation automatically.
+- **Include Placement**: All `#include` directives MUST be placed strictly at the top of source (`.cpp`) and header (`.h`) files, immediately following file headers and header guards. **NEVER** place `#include` directives in the middle of a file, between functions, or inside functions/blocks.
 - **NEVER** access internal struct fields (e.g., `bytes.data`, `string.heap.data`) directly in external consumer code or tests if a corresponding API function is provided by the header file (e.g., `mla_bytes_get_data_readonly`, `mla_string_data`). External code must always use the provided API for data access and manipulation to ensure encapsulation. Internal framework implementation files (e.g., implementations like `mla_string*` and `mla_bytes*` functions) are permitted to access internal fields like `.heap.data` or `.heap.length` as needed for core operations.
 - **Definition of Done**: At the end of every task, ALL unit tests (`./run_all_tests.sh`) and ALL benchmarks (`./run_all_benchmarks.sh`) MUST be executed and pass successfully across all supported compiler toolchains before declaring completion.

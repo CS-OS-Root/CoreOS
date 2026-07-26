@@ -9,11 +9,10 @@ The serializer module (`core/serializer/mla_serializer.h`) serializes and deseri
 
 ## The Static Serialize / Deserialize Convention
 
-Every serializable struct must define both static functions inside the struct body. These are the functions that `mla_serialize_definition<T>()` binds to automatically.
+Every serializable struct must define both static functions inside the struct body. These are the functions that `mla_serialize_definition<T>()` and `mla_serializer_write_data_struct` / `mla_serializer_read_data_struct` bind to automatically.
 
 ```cpp
 #include "../serializer/mla_serializer.h"
-#include "../reflection/mla_reflection.h"
 
 struct mla_sensor_reading_t {
     mla_string_t sensorId;
@@ -21,9 +20,21 @@ struct mla_sensor_reading_t {
     mla_int32_t  humidity;
     mla_bool_t   isValid;
 
+    static mla_sensor_reading_t init() {
+        return {
+            mla_string_empty(),
+            0.0f,
+            0,
+            false
+        };
+    }
+
     // --- Serialize: write all fields to the serializer ---
-    static mla_bool_t serialize(mla_serializer_t& serializer, mla_platform_const_pointer_t obj) {
-        const mla_sensor_reading_t* self = mla_s_cast<const mla_sensor_reading_t*>(obj);
+    static mla_bool_t serialize(mla_serializer_t& serializer, const mla_pointer_t& obj) {
+        const mla_sensor_reading_t* self = mla_pointer_get_data<const mla_sensor_reading_t>(obj);
+        if (self == nullptr) {
+            return false;
+        }
         mla_serializer_write_string(serializer, mla_string_const("sensorId"),    self->sensorId);
         mla_serializer_write_float (serializer, mla_string_const("temperature"), self->temperature);
         mla_serializer_write_int32 (serializer, mla_string_const("humidity"),    self->humidity);
@@ -32,8 +43,11 @@ struct mla_sensor_reading_t {
     }
 
     // --- Deserialize: handle one property at a time ---
-    static mla_deserializer_read_result_t deserialize(mla_deserializer_t& deserializer, mla_platform_pointer_t obj, const mla_string_t& property_name) {
-        mla_sensor_reading_t* self = mla_s_cast<mla_sensor_reading_t*>(obj);
+    static mla_deserializer_read_result_t deserialize(mla_deserializer_t& deserializer, mla_pointer_t& obj, const mla_string_t& property_name) {
+        mla_sensor_reading_t* self = mla_pointer_get_data<mla_sensor_reading_t>(obj);
+        if (self == nullptr) {
+            return MLA_DESERIALIZER_READ_ERROR;
+        }
         if (mla_string_equals_const(property_name, "sensorId")) {
             mla_deserializer_read_string(deserializer, self->sensorId);
         } else if (mla_string_equals_const(property_name, "temperature")) {
@@ -46,27 +60,26 @@ struct mla_sensor_reading_t {
             return MLA_DESERIALIZER_READ_SKIPPED;
         }
     }
-
 };
 ```
 
 ### Serialize Function Signature
 
 ```cpp
-static mla_bool_t serialize(mla_serializer_t& serializer, mla_platform_const_pointer_t obj);
+static mla_bool_t serialize(mla_serializer_t& serializer, const mla_pointer_t& obj);
 ```
 
-- Cast `obj` to `const MyStruct*` at the top of the function.
+- Extract data pointer via `mla_pointer_get_data<const MyStruct>(obj)` at the top of the function and check for `nullptr`.
 - Write every field using the appropriate `mla_serializer_write_*` macro.
 - Return `true` on success, `false` on failure.
 
 ### Deserialize Function Signature
 
 ```cpp
-static mla_deserializer_read_result_t deserialize(mla_deserializer_t& deserializer, mla_platform_pointer_t obj, const mla_string_t& property_name);
+static mla_deserializer_read_result_t deserialize(mla_deserializer_t& deserializer, mla_pointer_t& obj, const mla_string_t& property_name);
 ```
 
-- Cast `obj` to `MyStruct*` at the top of the function.
+- Extract data pointer via `mla_pointer_get_data<MyStruct>(obj)` at the top of the function and check for `nullptr`.
 - Match `property_name` against each field name using `mla_string_equals_const`.
 - Call the corresponding `mla_deserializer_read_*` macro for matched fields — these macros return internally.
 - Return `MLA_DESERIALIZER_READ_SKIPPED` in the `else` branch for unknown properties.
@@ -116,98 +129,34 @@ static mla_deserializer_read_result_t deserialize(mla_deserializer_t& deserializ
 
 > **Note:** All `mla_deserializer_read_*` macros contain an implicit `return` — do **not** write an explicit return after them.
 
-## Nested Struct and List Example (Full)
+## High-Level Struct Serialization & Deserialization Helpers
+
+Use `mla_serializer_write_data_struct` and `mla_serializer_read_data_struct` to serialize or deserialize an entire root struct instance to/from a serializer/deserializer:
 
 ```cpp
-struct mla_gps_position_t {
-    mla_double_t latitude;
-    mla_double_t longitude;
-
-    static mla_bool_t serialize(mla_serializer_t& serializer, mla_platform_const_pointer_t obj) {
-        const mla_gps_position_t* self = mla_s_cast<const mla_gps_position_t*>(obj);
-        mla_serializer_write_double(serializer, mla_string_const("latitude"),  self->latitude);
-        mla_serializer_write_double(serializer, mla_string_const("longitude"), self->longitude);
-        return true;
-    }
-
-    static mla_deserializer_read_result_t deserialize(mla_deserializer_t& deserializer, mla_platform_pointer_t obj, const mla_string_t& property_name) {
-        mla_gps_position_t* self = mla_s_cast<mla_gps_position_t*>(obj);
-        if (mla_string_equals_const(property_name, "latitude")) {
-            mla_deserializer_read_double(deserializer, self->latitude);
-        } else if (mla_string_equals_const(property_name, "longitude")) {
-            mla_deserializer_read_double(deserializer, self->longitude);
-        } else {
-            return MLA_DESERIALIZER_READ_SKIPPED;
-        }
-    }
-
-};
-
-struct mla_device_report_t {
-    mla_string_t       deviceId;
-    mla_gps_position_t position;
-    mla_array_list_t<mla_sensor_reading_t, mla_sensor_reading_initializer> readings;
-
-    static mla_bool_t serialize(mla_serializer_t& serializer, mla_platform_const_pointer_t obj) {
-        const mla_device_report_t* self = mla_s_cast<const mla_device_report_t*>(obj);
-        mla_serializer_write_string     (serializer, mla_string_const("deviceId"), self->deviceId);
-        mla_serializer_write_struct     (serializer, mla_string_const("position"), self->position, mla_gps_position_t);
-        mla_serializer_write_list_struct(serializer, mla_string_const("readings"), self->readings, mla_sensor_reading_t);
-        return true;
-    }
-
-    static mla_deserializer_read_result_t deserialize(mla_deserializer_t& deserializer, mla_platform_pointer_t obj, const mla_string_t& property_name) {
-        mla_device_report_t* self = mla_s_cast<mla_device_report_t*>(obj);
-        if (mla_string_equals_const(property_name, "deviceId")) {
-            mla_deserializer_read_string(deserializer, self->deviceId);
-        } else if (mla_string_equals_const(property_name, "position")) {
-            mla_deserializer_read_struct(deserializer, self->position, mla_gps_position_t);
-        } else if (mla_string_equals_const(property_name, "readings")) {
-            mla_deserializer_read_list_struct(deserializer, self->readings, mla_sensor_reading_t);
-        } else {
-            return MLA_DESERIALIZER_READ_SKIPPED;
-        }
-    }
-
-};
-```
-
-## Serialize to JSON
-
-```cpp
-#include "../serializer/mla_json_serializer.h"
-
-mla_sensor_reading_t reading = { mla_string_const("sensor-01"), 23.5f, 65, true };
+// Serialize a struct
+mla_sensor_reading_t reading = mla_sensor_reading_t::init();
+reading.sensorId = mla_string_const("sensor-01");
+reading.temperature = 23.5f;
 
 mla_stream_output_t stream = mla_stream_output_string_builder();
 mla_serializer_t serializer = mla_json_serializer(stream);
 
-auto definition = mla_serialize_definition<mla_sensor_reading_t>();
-mla_serialize(serializer, definition, &reading);
+mla_serializer_write_data_struct(serializer, reading);
 
-// Retrieve the JSON string from the builder stream
-mla_string_t json = mla_stream_output_string_builder_get(stream);
-```
+// Deserialize a struct
+mla_stream_input_t input = mla_stream_input_from_string(json_string);
+mla_deserializer_t deserializer = mla_json_deserializer(input);
 
-## Deserialize from JSON
-
-```cpp
-#include "../serializer/mla_json_serializer.h"
-
-mla_string_t json = mla_string_const("{\"sensorId\":\"sensor-01\",\"temperature\":23.5}");
-mla_sensor_reading_t reading = {};
-
-mla_stream_input_t stream = mla_stream_input_from_string(json);
-mla_deserializer_t deserializer = mla_json_deserializer(stream);
-
-auto definition = mla_serialize_definition<mla_sensor_reading_t>();
-mla_deserialize(deserializer, definition, &reading);
+mla_sensor_reading_t loaded = mla_sensor_reading_t::init();
+mla_serializer_read_data_struct(deserializer, loaded);
 ```
 
 ## Rules
 
 - Every serializable struct **must** provide both `serialize` and `deserialize` static member functions.
-- The `serialize` function must cast `obj` to `const MyStruct*`; the `deserialize` function must cast `obj` to `MyStruct*`.
+- The `serialize` function must use `const mla_pointer_t& obj` and cast using `mla_pointer_get_data<const MyStruct>(obj)`; the `deserialize` function must use `mla_pointer_t& obj` and cast using `mla_pointer_get_data<MyStruct>(obj)`.
+- **NEVER** write manual token reading loops (e.g. `while (deserializer.read_next(...))`) to parse struct properties manually. Always use `mla_serializer_write_data_struct` and `mla_serializer_read_data_struct` with static `serialize`/`deserialize` struct methods.
 - All `mla_deserializer_read_*` macros return internally — do **not** add an explicit `return` statement after them.
 - Always return `MLA_DESERIALIZER_READ_SKIPPED` in the `else` branch for unknown properties.
 - Nested struct types used via `mla_serializer_write_struct` / `mla_deserializer_read_struct` must also implement `serialize` and `deserialize`.
@@ -217,6 +166,9 @@ mla_deserialize(deserializer, definition, &reading);
 ## Incorrect Usage
 
 ```cpp
+// ❌ Manual token parsing loop instead of framework helper
+while (deserializer.read_next(deserializer)) { ... } // ❌ Use static deserialize method & mla_serializer_read_data_struct
+
 // ❌ Missing SKIPPED return for unknown properties
 static mla_deserializer_read_result_t deserialize(...) {
     if (mla_string_equals_const(property_name, "value")) {
@@ -231,18 +183,8 @@ if (mla_string_equals_const(property_name, "value")) {
     return MLA_DESERIALIZER_READ_HANDLED; // ❌ unreachable / duplicate return
 }
 
-// ❌ Using standard types in serializable structs
-struct bad_t {
-    int value; // use mla_int32_t instead
-    static mla_bool_t serialize(...) { ... }
-};
-
-// ❌ Forgetting to implement deserialize
-struct incomplete_t {
-    mla_int32_t value;
-    static mla_bool_t serialize(...) { ... }
-    // missing: static mla_deserializer_read_result_t deserialize(...)
-};
+// ❌ Using raw void pointers or C-style casts in serialize
+static mla_bool_t serialize(mla_serializer_t& serializer, mla_platform_const_pointer_t obj) { // ❌ Use const mla_pointer_t&
+    const MyStruct* self = (const MyStruct*)obj; // ❌ Use mla_pointer_get_data<const MyStruct>(obj)
+}
 ```
-
-
