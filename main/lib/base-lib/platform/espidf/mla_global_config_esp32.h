@@ -53,7 +53,7 @@ mla_bytes_t mla_private_esp32_read_config_input() {
     mla_bytes_t config_data = mla_bytes(required_size);
     if (config_data.size != required_size) {
         nvs_close(nvs_handle);
-        mla_bytes_destroy(config_data);
+        config_data = mla_bytes_empty();
         return mla_bytes_empty();
     }
 
@@ -62,7 +62,7 @@ mla_bytes_t mla_private_esp32_read_config_input() {
     nvs_close(nvs_handle);
 
     if (err != ESP_OK) {
-        mla_bytes_destroy(config_data);
+        config_data = mla_bytes_empty();
         return mla_bytes_empty();
     }
 
@@ -84,7 +84,7 @@ mla_bool_t mla_private_esp32_commit_config_output(mla_bytes_t& output, mla_size_
     }
 
     if (err != ESP_OK) {
-        mla_bytes_destroy(output);
+        output = mla_bytes_empty();
         return false;
     }
 
@@ -92,7 +92,7 @@ mla_bool_t mla_private_esp32_commit_config_output(mla_bytes_t& output, mla_size_
     nvs_handle_t nvs_handle;
     err = nvs_open(MLA_ESP32_NVS_NAMESPACE, NVS_READWRITE, &nvs_handle);
     if (err != ESP_OK) {
-        mla_bytes_destroy(output);
+        output = mla_bytes_empty();
         return false;
     }
 
@@ -106,7 +106,7 @@ mla_bool_t mla_private_esp32_commit_config_output(mla_bytes_t& output, mla_size_
     err = nvs_set_blob(nvs_handle, MLA_ESP32_NVS_KEY, output.data, bytesToWrite);
     if (err != ESP_OK) {
         nvs_close(nvs_handle);
-        mla_bytes_destroy(output);
+        output = mla_bytes_empty();
         return false;
     }
 
@@ -114,7 +114,7 @@ mla_bool_t mla_private_esp32_commit_config_output(mla_bytes_t& output, mla_size_
     err = nvs_commit(nvs_handle);
     nvs_close(nvs_handle);
 
-    mla_bytes_destroy(output);
+    output = mla_bytes_empty();
 
     return err == ESP_OK;
 }

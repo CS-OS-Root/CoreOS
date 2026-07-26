@@ -90,7 +90,7 @@ mla_bool_t mla_private_file_system_native_delete_file(mla_file_system_t& file_sy
 
     int result = unlink(mla_string_data(fullPath));
 
-    return result == 0 || errno == ENOENT;
+    return result == 0;
 }
 
 mla_bool_t mla_private_file_system_native_create_directory(mla_file_system_t& file_system, const mla_string_t& path) {

@@ -78,7 +78,7 @@ mla_bytes_t mla_linux_read_config_input() {
     close(fd);
 
     if (bytesRead != st.st_size) {
-        mla_bytes_destroy(config_data);
+        config_data = mla_bytes_empty();
         return mla_bytes(0);
     }
 
@@ -127,7 +127,7 @@ mla_bool_t mla_linux_commit_config_output(mla_bytes_t& output, mla_size_t unused
 
     int fd = open(tempPath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd == -1) {
-        mla_bytes_destroy(output);
+        output = mla_bytes_empty();
         return false;
     }
 
@@ -140,7 +140,7 @@ mla_bool_t mla_linux_commit_config_output(mla_bytes_t& output, mla_size_t unused
 
     if (bytesWritten != mla_s_cast<ssize_t>(bytesToWrite)) {
         unlink(tempPath);
-        mla_bytes_destroy(output);
+        output = mla_bytes_empty();
         return false;
     }
 
@@ -149,7 +149,7 @@ mla_bool_t mla_linux_commit_config_output(mla_bytes_t& output, mla_size_t unused
     if (access(configPath, F_OK) == 0) {
         if (rename(configPath, backupPath) != 0) {
             unlink(tempPath);
-            mla_bytes_destroy(output);
+            output = mla_bytes_empty();
             return false;
         }
     }
@@ -157,12 +157,12 @@ mla_bool_t mla_linux_commit_config_output(mla_bytes_t& output, mla_size_t unused
     if (rename(tempPath, configPath) != 0) {
         rename(backupPath, configPath);
         unlink(tempPath);
-        mla_bytes_destroy(output);
+        output = mla_bytes_empty();
         return false;
     }
 
     unlink(backupPath);
-    mla_bytes_destroy(output);
+    output = mla_bytes_empty();
     return true;
 }
 

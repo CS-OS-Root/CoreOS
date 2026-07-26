@@ -24,7 +24,7 @@
 
 mla_bool_t mla_private_config_disabled_commit_output(mla_bytes_t output, mla_size_t unused_bytes) {
     (void)unused_bytes;
-    mla_bytes_destroy(output);
+    output = mla_bytes_empty();
     return false;
 }
 
