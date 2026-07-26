@@ -328,6 +328,86 @@ inline void AutoCompleteWithNoMatches() {
     assert_equal(mla_array_list_size(result.possibleAutoCompletions), (mla_size_t)0, "There should be no auto completions for non-matching prefix");
 }
 
+static mla_array_list_t<mla_string_t, mla_string_initializer> format_param_autocomplete(
+    const mla_cli_command_t &command,
+    const mla_string_t &parameterName,
+    const mla_string_t &currentValuePrefix,
+    const mla_user_data_t &userData) {
+    (void)command;
+    (void)parameterName;
+    (void)userData;
+    const mla_char_t* candidates[] = { "json", "xml", "yaml", "csv" };
+    return mla_cli_parameter_value_autocomplete_filter_c_strings(candidates, 4, currentValuePrefix);
+}
+
+inline void AutoCompleteParameterValuesFixedList() {
+    mla_cli_parser_t parser = mla_cli_parser();
+
+    mla_cli_command_t cmdExport = mla_cli_command(mla_string_const("export"), nullptr);
+    mla_cli_command_parameter_t formatParam = mla_cli_command_parameter(
+        mla_string_const("format"), mla_string_const("Output format"), true, false, format_param_autocomplete);
+    mla_cli_command_add_parameter(cmdExport, formatParam);
+    mla_array_list_add(parser.availableCommands, cmdExport);
+
+    // Case 1: Prefix 'j' -> should return suffix 'son' for 'json'
+    auto result1 = mla_cli_parser_parse(parser, mla_string("export --format j"));
+    assert_equal(mla_array_list_size(result1.possibleAutoCompletions), (mla_size_t)1, "Should have 1 completion for 'j'");
+    if (mla_array_list_size(result1.possibleAutoCompletions) == 1) {
+        assert_struct_equal(mla_string_t, *mla_array_list_get_ref(result1.possibleAutoCompletions, 0), mla_string("son"), "Suffix should be 'son'");
+    }
+
+    // Case 2: Prefix 'y' -> should return suffix 'aml' for 'yaml'
+    auto result2 = mla_cli_parser_parse(parser, mla_string("export --format y"));
+    assert_equal(mla_array_list_size(result2.possibleAutoCompletions), (mla_size_t)1, "Should have 1 completion for 'y'");
+    if (mla_array_list_size(result2.possibleAutoCompletions) == 1) {
+        assert_struct_equal(mla_string_t, *mla_array_list_get_ref(result2.possibleAutoCompletions, 0), mla_string("aml"), "Suffix should be 'aml'");
+    }
+
+    // Case 3: Empty prefix (space after --format) -> should return all candidates as suffixes
+    auto result3 = mla_cli_parser_parse(parser, mla_string("export --format "));
+    assert_equal(mla_array_list_size(result3.possibleAutoCompletions), (mla_size_t)4, "Should have 4 completions for empty prefix");
+}
+
+static mla_array_list_t<mla_string_t, mla_string_initializer> host_dynamic_autocomplete(
+    const mla_cli_command_t &command,
+    const mla_string_t &parameterName,
+    const mla_string_t &currentValuePrefix,
+    const mla_user_data_t &userData) {
+    (void)command;
+    (void)parameterName;
+    (void)userData;
+    mla_array_list_t<mla_string_t, mla_string_initializer> list =
+        mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_array_list_add(list, mla_string_const("localhost"));
+    mla_array_list_add(list, mla_string_const("127.0.0.1"));
+    mla_array_list_add(list, mla_string_const("192.168.1.1"));
+    return mla_cli_parameter_value_autocomplete_filter_candidates(list, currentValuePrefix);
+}
+
+inline void AutoCompleteParameterValuesDynamicCallback() {
+    mla_cli_parser_t parser = mla_cli_parser();
+
+    mla_cli_command_t cmdConnect = mla_cli_command(mla_string_const("connect"), nullptr);
+    mla_cli_command_parameter_t hostParam = mla_cli_command_parameter(
+        mla_string_const("host"), mla_string_const("Remote host"), true, false, host_dynamic_autocomplete);
+    mla_cli_command_add_parameter(cmdConnect, hostParam);
+    mla_array_list_add(parser.availableCommands, cmdConnect);
+
+    // Case 1: Prefix 'local' -> suffix 'host'
+    auto result1 = mla_cli_parser_parse(parser, mla_string("connect --host local"));
+    assert_equal(mla_array_list_size(result1.possibleAutoCompletions), (mla_size_t)1, "Should have 1 completion for 'local'");
+    if (mla_array_list_size(result1.possibleAutoCompletions) == 1) {
+        assert_struct_equal(mla_string_t, *mla_array_list_get_ref(result1.possibleAutoCompletions, 0), mla_string("host"), "Suffix should be 'host'");
+    }
+
+    // Case 2: Prefix '127.' -> suffix '0.0.1'
+    auto result2 = mla_cli_parser_parse(parser, mla_string("connect --host 127."));
+    assert_equal(mla_array_list_size(result2.possibleAutoCompletions), (mla_size_t)1, "Should have 1 completion for '127.'");
+    if (mla_array_list_size(result2.possibleAutoCompletions) == 1) {
+        assert_struct_equal(mla_string_t, *mla_array_list_get_ref(result2.possibleAutoCompletions, 0), mla_string("0.0.1"), "Suffix should be '0.0.1'");
+    }
+}
+
 void RegisterCliParserTests(mla_test_executor_t &p_TestExecutor) {
 
     mla_test_t test = mla_test("CommandWithParameters", test_category, ParseCommandWithParameters);
@@ -384,6 +464,12 @@ void RegisterCliParserTests(mla_test_executor_t &p_TestExecutor) {
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("AutoCompleteWithNoMatches", test_category, AutoCompleteWithNoMatches);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("AutoCompleteParameterValuesFixedList", test_category, AutoCompleteParameterValuesFixedList);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("AutoCompleteParameterValuesDynamicCallback", test_category, AutoCompleteParameterValuesDynamicCallback);
     mla_test_executor_register_test(p_TestExecutor, test);
 }
 

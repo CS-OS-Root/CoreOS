@@ -179,9 +179,34 @@ p_Out.write(p_Out.userdata, mla_string_const("value: "));
 
 // Write a C string literal (no mla_string_t needed)
 p_Out.writeCString(p_Out.userdata, "Done.\n");
+Always end output lines with `\n` for proper terminal display.
+
+## Parameter Value Autocompletion
+
+Parameters can provide autocompletion options for parameter values via `mla_cli_parameter_value_autocomplete_fn`. Fixed list helpers `mla_cli_parameter_value_autocomplete_filter_c_strings` and `mla_cli_parameter_value_autocomplete_filter_candidates` make filtering candidate strings based on current user input prefix simple:
+
+```cpp
+static mla_array_list_t<mla_string_t, mla_string_initializer> format_autocomplete(
+    const mla_cli_command_t &command,
+    const mla_string_t &parameterName,
+    const mla_string_t &currentValuePrefix,
+    const mla_user_data_t &userData) {
+    (void)command; (void)parameterName; (void)userData;
+    const mla_char_t* formats[] = { "json", "xml", "yaml", "csv" };
+    return mla_cli_parameter_value_autocomplete_filter_c_strings(formats, 4, currentValuePrefix);
+}
+
+// Attach callback to parameter
+mla_cli_command_parameter_t formatParam = mla_cli_command_parameter(
+    mla_string_const("format"),
+    mla_string_const("Output format"),
+    true,   // mandatory
+    false,  // isFlag
+    format_autocomplete
+);
+mla_cli_command_add_parameter(cmd, formatParam);
 ```
 
-Always end output lines with `\n` for proper terminal display.
 
 ## Naming Conventions
 

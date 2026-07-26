@@ -72,6 +72,10 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
     }
 
 
+    mla_string_t activeParamForValueAutocomplete = mla_string_empty();
+    mla_string_t activeParamValuePrefix = mla_string_empty();
+    mla_bool_t isValueAutocompleteActive = false;
+
     // Match the parameters
     while (matchedPositon + 3 < commandLength) {
         // Check if we are at the beginning of a parameter
@@ -95,16 +99,19 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
         mla_string_t paramName = mla_string_substr(command, paramNameStart, paramNameEnd - paramNameStart);
 
         mla_bool_t isFlag = false;
+        const mla_cli_command_parameter_t *matchingParamRef = nullptr;
         for (mla_size_t i = 0; i < mla_array_list_size(result.matchingCommand.parameters); ++i) {
             const mla_cli_command_parameter_t *commandParameter =
                 mla_array_list_get_ref(result.matchingCommand.parameters, i);
             if (mla_string_equals(commandParameter->parameterName, paramName)) {
                 isFlag = commandParameter->is_flag;
+                matchingParamRef = commandParameter;
                 break;
             }
         }
 
         if (isFlag) {
+            isValueAutocompleteActive = false;
             mla_hash_map_push(result.matchingParameters, paramName, mla_string_empty());
             matchedPositon = paramNameEnd;
 
@@ -117,11 +124,12 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
         }
 
         if (commandLength <= paramNameEnd) {
+            isValueAutocompleteActive = false;
             break;
         }
 
         if (commandData[paramNameEnd] != ' ') {
-            // Not finished
+            isValueAutocompleteActive = false;
             break;
         }
 
@@ -148,7 +156,14 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
         }
 
         if (paramValueStart >= commandLength) {
-            // No parameter value found
+            // No parameter value found yet
+            if (matchingParamRef != nullptr && matchingParamRef->value_autocomplete_fn != nullptr) {
+                activeParamForValueAutocomplete = paramName;
+                activeParamValuePrefix = mla_string_empty();
+                isValueAutocompleteActive = true;
+            } else {
+                isValueAutocompleteActive = false;
+            }
             break;
         }
 
@@ -158,27 +173,19 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
             while (paramValueEnd < commandLength && commandData[paramValueEnd] != '\"') {
                 paramValueEnd++;
             }
-            if (paramValueEnd < commandLength && commandData[paramValueEnd] != '\"') {
-                // Not finished
-                break;
-            }
         } else {
             while (paramValueEnd < commandLength && commandData[paramValueEnd] != ' ') {
                 paramValueEnd++;
             }
         }
 
-        // Extract the parameter value
-        if (paramValueEnd == paramValueStart) {
-            // No parameter value found
-            break;
-        }
-
         mla_string_t paramValue = mla_string_empty();
 
         if (isQuoted) {
             paramValue = mla_string_substr(command, paramValueStart, paramValueEnd - paramValueStart);
-            paramValueEnd++; // Skip the ending quote
+            if (paramValueEnd < commandLength && commandData[paramValueEnd] == '\"') {
+                paramValueEnd++; // Skip the ending quote
+            }
         } else {
             if (paramNameEnd == commandLength - 1) {
                 paramValue = mla_string_substr(command, paramValueStart, paramValueEnd);
@@ -189,6 +196,15 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
 
         mla_hash_map_push(result.matchingParameters, paramName, paramValue);
         matchedPositon = paramValueEnd;
+
+        if ((paramValueEnd == commandLength || (paramValueEnd == commandLength - 1 && commandData[paramValueEnd] == ' ')) &&
+            matchingParamRef != nullptr && matchingParamRef->value_autocomplete_fn != nullptr) {
+            activeParamForValueAutocomplete = paramName;
+            activeParamValuePrefix = paramValue;
+            isValueAutocompleteActive = true;
+        } else {
+            isValueAutocompleteActive = false;
+        }
 
         // Skip whitespace between parameters
         while (matchedPositon + 1 < commandLength && commandData[matchedPositon] == ' ' && commandData[matchedPositon + 1] == ' ') {
@@ -206,10 +222,33 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
         result.isValid = true;
     }
 
-    // Autocomplete possible parameters
+    // Autocomplete possible parameters or parameter values
 
-    // Check if we are at the beginning of a parameter
-    if (matchedPositon + 3 < commandLength && commandData[matchedPositon] == ' ' && commandData[matchedPositon + 1]
+    if (isValueAutocompleteActive && !mla_string_is_empty(activeParamForValueAutocomplete)) {
+        const mla_cli_command_parameter_t *matchingParam = nullptr;
+        for (mla_size_t i = 0; i < mla_array_list_size(result.matchingCommand.parameters); ++i) {
+            const mla_cli_command_parameter_t *p = mla_array_list_get_ref(result.matchingCommand.parameters, i);
+            if (mla_string_equals(p->parameterName, activeParamForValueAutocomplete)) {
+                matchingParam = p;
+                break;
+            }
+        }
+
+        if (matchingParam != nullptr && matchingParam->value_autocomplete_fn != nullptr) {
+            mla_array_list_t<mla_string_t, mla_string_initializer> rawCompletions =
+                matchingParam->value_autocomplete_fn(result.matchingCommand, activeParamForValueAutocomplete,
+                    activeParamValuePrefix, result.matchingCommand.user_data);
+
+            mla_size_t prefixLen = mla_string_length(activeParamValuePrefix);
+            for (mla_size_t i = 0; i < mla_array_list_size(rawCompletions); ++i) {
+                const mla_string_t *candidate = mla_array_list_get_ref(rawCompletions, i);
+                if (candidate != nullptr && mla_string_starts_with(*candidate, activeParamValuePrefix)) {
+                    mla_string_t suffix = mla_string_substr(*candidate, prefixLen);
+                    mla_array_list_add(result.possibleAutoCompletions, suffix);
+                }
+            }
+        }
+    } else if (matchedPositon + 3 < commandLength && commandData[matchedPositon] == ' ' && commandData[matchedPositon + 1]
         == '-' && commandData[matchedPositon + 2] == '-') {
 
         // We are in the middle of a parameter name
