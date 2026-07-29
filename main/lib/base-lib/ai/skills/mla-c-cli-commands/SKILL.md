@@ -188,7 +188,7 @@ Parameter values can be autocompleted during interactive CLI editing by supplyin
 #include "../cli/mla_cli_command.h"
 #include "../cli/mla_cli_history.h"
 
-static mla_array_list_t<mla_string_t, mla_string_initializer> my_parameter_autocomplete(
+static mla_array_list_t<mla_init_struct(mla_string_t)> my_parameter_autocomplete(
     const mla_cli_command_t &command,
     const mla_string_t &parameterName,
     const mla_string_t &currentValuePrefix,
@@ -196,7 +196,7 @@ static mla_array_list_t<mla_string_t, mla_string_initializer> my_parameter_autoc
     (void)command; (void)parameterName; (void)userData;
 
     // Retrieve history candidates
-    mla_array_list_t<mla_string_t, mla_string_initializer> candidates =
+    mla_array_list_t<mla_init_struct(mla_string_t)> candidates =
         mla_cli_history_get_candidates(mla_cli_history_global_store(), mla_string_const("module:cmd:param"), currentValuePrefix);
 
     // Add static/preset candidates

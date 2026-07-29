@@ -86,8 +86,8 @@ mla_fs_delete_file(mla_string_const("/data/old.txt"));
 ### List Files in a Directory
 
 ```cpp
-mla_array_list_t<mla_string_t, mla_string_initializer> files =
-    mla_array_list<mla_string_t, mla_string_initializer>();
+mla_array_list_t<mla_init_struct(mla_string_t)> files =
+    mla_array_list<mla_init_struct(mla_string_t)>();
 if (mla_fs_list_files(mla_string_const("/data/"), files)) {
     for (mla_size_t i = 0; i < mla_array_list_size(files); i++) {
         mla_info(mla_array_list_get_unsafe(files, i));
@@ -107,8 +107,8 @@ if (mla_fs_directory_exists(mla_string_const("/data/logs/"))) {
 }
 
 // List subdirectories
-mla_array_list_t<mla_string_t, mla_string_initializer> dirs =
-    mla_array_list<mla_string_t, mla_string_initializer>();
+mla_array_list_t<mla_init_struct(mla_string_t)> dirs =
+    mla_array_list<mla_init_struct(mla_string_t)>();
 mla_fs_list_directory(mla_string_const("/data/"), dirs);
 
 // Delete a directory

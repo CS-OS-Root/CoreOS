@@ -89,6 +89,10 @@ mla_bool_t mla_private_file_system_native_delete_file(mla_file_system_t& file_sy
     mla_string_t fullPath = mla_private_file_system_native_file_path_to_full_path(fs, path);
 
     int result = unlink(mla_string_data(fullPath));
+    if (result != 0 && (errno == EACCES || errno == EPERM)) {
+        chmod(mla_string_data(fullPath), S_IRUSR | S_IWUSR | S_IXUSR);
+        result = unlink(mla_string_data(fullPath));
+    }
 
     return result == 0;
 }

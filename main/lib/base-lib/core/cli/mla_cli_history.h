@@ -71,7 +71,7 @@ struct mla_cli_history_store_t {
             return false;
         }
         mla_serializer_write_list_struct(serializer, mla_string_const("entries"), self->entries, mla_cli_history_entry_t);
-        mla_serializer_write_uint64(serializer, mla_string_const("max_entries_per_key"), static_cast<mla_uint64_t>(self->max_entries_per_key));
+        mla_serializer_write_uint32(serializer, mla_string_const("max_entries_per_key"), self->max_entries_per_key);
         return true;
     }
 
@@ -83,9 +83,7 @@ struct mla_cli_history_store_t {
         if (mla_string_equals_const(property_name, "entries")) {
             mla_deserializer_read_list_struct(deserializer, self->entries, mla_cli_history_entry_t);
         } else if (mla_string_equals_const(property_name, "max_entries_per_key")) {
-            mla_uint64_t val = 0;
-            mla_deserializer_read_uint64(deserializer, val);
-            self->max_entries_per_key = static_cast<mla_size_t>(val);
+            mla_deserializer_read_uint32(deserializer, self->max_entries_per_key);
         } else {
             return MLA_DESERIALIZER_READ_SKIPPED;
         }

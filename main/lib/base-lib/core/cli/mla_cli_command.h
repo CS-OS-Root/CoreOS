@@ -26,7 +26,7 @@ struct mla_cli_command_t;
  * @param parameterName The name of the parameter requiring value autocompletion.
  * @param currentValuePrefix The current prefix string typed by the user for the parameter value.
  * @param userData User data attached to the command.
- * @return mla_array_list_t<mla_string_t, mla_string_initializer> Candidate completion strings.
+ * @return mla_array_list_t<mla_init_struct(mla_string_t)> Candidate completion strings.
  */
 typedef mla_array_list_t<mla_init_struct(mla_string_t)> (*mla_cli_parameter_value_autocomplete_fn)(
     const mla_cli_command_t &command,
@@ -124,7 +124,7 @@ inline void mla_cli_command_parameter_set_value_autocomplete_fn(mla_cli_command_
  *
  * @param candidates List of candidate string values.
  * @param prefix Prefix string to filter candidates against.
- * @return mla_array_list_t<mla_string_t, mla_string_initializer> Array list of matching candidate strings.
+ * @return mla_array_list_t<mla_init_struct(mla_string_t)> Array list of matching candidate strings.
  */
 inline mla_array_list_t<mla_init_struct(mla_string_t)> mla_cli_parameter_value_autocomplete_filter_candidates(
     const mla_array_list_t<mla_init_struct(mla_string_t)> &candidates,

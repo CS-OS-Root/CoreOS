@@ -29,8 +29,8 @@ The initializer is called when elements are removed or the list is cleared, to r
 mla_array_list_t<mla_int32_t> numbers = mla_array_list<mla_int32_t>();
 
 // Custom initial capacity
-mla_array_list_t<mla_string_t, mla_string_initializer> names =
-    mla_array_list<mla_string_t, mla_string_initializer>(64);
+mla_array_list_t<mla_init_struct(mla_string_t)> names =
+    mla_array_list<mla_init_struct(mla_string_t)>(64);
 
 // Empty / sentinel value
 auto empty = mla_array_list_empty<mla_int32_t>();

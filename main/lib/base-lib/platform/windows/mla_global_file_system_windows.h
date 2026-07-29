@@ -45,6 +45,9 @@ mla_string_t mla_private_file_system_native_file_path_to_full_path(mla_file_syst
             correctedPath = mla_string_substr(correctedPath, 1);
         }
 
+        while (mla_string_length(correctedPath) > 3 && (mla_string_ends_with(correctedPath, mla_windows_fs_directory_seperator) || mla_string_ends_with(correctedPath, mla_string_const("/")))) {
+            correctedPath = mla_string_substr(correctedPath, 0, mla_string_length(correctedPath) - 1);
+        }
         return correctedPath;
     }
 
@@ -59,7 +62,11 @@ mla_string_t mla_private_file_system_native_file_path_to_full_path(mla_file_syst
         p2 = mla_string_substr(p2, 1);
     }
 
-    return mla_string_concat(p1, mla_windows_fs_directory_seperator, p2);
+    mla_string_t fullPath = mla_string_concat(p1, mla_windows_fs_directory_seperator, p2);
+    while (mla_string_length(fullPath) > 3 && (mla_string_ends_with(fullPath, mla_windows_fs_directory_seperator) || mla_string_ends_with(fullPath, mla_string_const("/")))) {
+        fullPath = mla_string_substr(fullPath, 0, mla_string_length(fullPath) - 1);
+    }
+    return fullPath;
 }
 
 mla_bool_t mla_private_file_system_native_file_exists(mla_file_system_t& file_system, const mla_string_t& path) {
@@ -104,6 +111,7 @@ mla_bool_t mla_private_file_system_native_delete_file(mla_file_system_t& file_sy
         return false;
     }
 
+    SetFileAttributesW(wide_path, FILE_ATTRIBUTE_NORMAL);
     mla_bool_t result = DeleteFileW(wide_path) != 0;
 
     return result;
@@ -232,6 +240,7 @@ mla_bool_t mla_private_file_system_native_delete_directory(mla_file_system_t& fi
         return false;
     }
 
+    SetFileAttributesW(wide_path, FILE_ATTRIBUTE_NORMAL);
     mla_bool_t result = RemoveDirectoryW(wide_path) != 0;
 
     return result;

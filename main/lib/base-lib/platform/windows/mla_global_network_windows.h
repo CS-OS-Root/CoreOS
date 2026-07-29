@@ -169,12 +169,6 @@ mla_bool_t mla_private_windows_connect(mla_network_connection_t &connection, con
                              mla_connection_type_t type, mla_size_t timeout_ms) {
     connection.host = host;
 
-    WSADATA wsaData;
-    mla_memset(&wsaData, 0, sizeof(WSADATA));
-    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        return false;
-    }
-
     // Create socket
     int sockType = (type == mla_connection_type_tcp) ? SOCK_STREAM : SOCK_DGRAM;
     int protocol = (type == mla_connection_type_tcp) ? IPPROTO_TCP : IPPROTO_UDP;
@@ -381,10 +375,10 @@ mla_bool_t mla_private_windows_bind_and_listen(mla_network_listener_t &listener,
         return false;
     }
 
-    // Exclusive address use
+    // Allow address reuse
     {
-        BOOL exclusive = TRUE;
-        setsockopt(sock, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, mla_r_cast<const char*>(&exclusive), sizeof(exclusive));
+        BOOL reuse = TRUE;
+        setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, mla_r_cast<const char*>(&reuse), sizeof(reuse));
     }
 
     // Allow dual-stack for IPv6

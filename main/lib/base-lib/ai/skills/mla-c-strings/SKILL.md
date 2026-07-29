@@ -150,7 +150,7 @@ mla_string_t replaced = mla_string_replace(str,
 ### Splitting
 
 ```cpp
-mla_array_list_t<mla_string_t, mla_string_initializer> parts =
+mla_array_list_t<mla_init_struct(mla_string_t)> parts =
     mla_string_split(csv, mla_string_const(","));
 
 for (mla_size_t i = 0; i < mla_array_list_size(parts); i++) {

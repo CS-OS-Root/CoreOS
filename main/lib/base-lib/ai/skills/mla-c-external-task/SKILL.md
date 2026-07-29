@@ -22,7 +22,7 @@ The External Task module (`core/external_task/`) provides functionality for laun
 #include "core/external_task/mla_external_task.h"
 
 mla_string_t program = mla_string_const("/usr/bin/git");
-mla_array_list_t<mla_string_t, mla_string_initializer> args = mla_array_list_t<mla_string_t, mla_string_initializer>::create();
+mla_array_list_t<mla_init_struct(mla_string_t)> args = mla_array_list_t<mla_init_struct(mla_string_t)>::create();
 
 mla_array_list_add(args, mla_string_const("status"));
 

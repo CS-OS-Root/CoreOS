@@ -184,6 +184,8 @@ void mla_task_manager_single_thread_run() {
     mla_uint32_t processedTaskCount = 0;
 
     do {
+        mla_uint64_t start_time = mla_system_time_ms();
+
         processedTaskCount = 0;
         // High get 4 Times more CPU than Low
         processedTaskCount = processedTaskCount + mla_task_manager_single_thread_run_with_prio(TASK_PRIO_HIGH);
@@ -195,6 +197,11 @@ void mla_task_manager_single_thread_run() {
         processedTaskCount = processedTaskCount + mla_task_manager_single_thread_run_with_prio(TASK_PRIO_HIGH);
 
         processedTaskCount = processedTaskCount + mla_task_manager_single_thread_run_with_prio(TASK_PRIO_LOW);
+
+        // if the loop is to fast we wait a little bit to dont burn the cpu the whole time
+        if ((mla_system_time_ms() - start_time) < 25) {
+            mla_sleep(10);
+        }
 
 
     } while (processedTaskCount != 0);
