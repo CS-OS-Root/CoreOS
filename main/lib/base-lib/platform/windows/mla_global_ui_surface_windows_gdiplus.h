@@ -324,10 +324,8 @@ void mla_private_windows_gdiplus_fill_path(mla_windows_window_surface_gdiplus_t 
 }
 
 mla_bool_t mla_private_windows_surface_gdiplus_render_draw_commands(const mla_ui_surface_t &surface,
-                                                           const mla_array_list_t<mla_ui_surface_draw_command_t,
-                                                               mla_ui_surface_draw_command_initializer_t> &drawCommands,
-                                                           mla_array_list_t<mla_ui_surface_input_event_t,
-                                                               mla_ui_surface_input_event_initializer_t> &eventsSinceLastFame) {
+                                                           const mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)> &drawCommands,
+                                                           mla_array_list_t<mla_init_struct(mla_ui_surface_input_event_t)> &eventsSinceLastFame) {
     mla_windows_window_surface_gdiplus_t *window_surface = mla_s_cast<mla_windows_window_surface_gdiplus_t *>(surface.resource);
     if (window_surface == nullptr) {
         return false;

@@ -7,7 +7,7 @@
 
 // Global Task Manager
 mla_task_manager_t g_TaskManager = {
-    mla_array_list_empty<mla_task_t, mla_task_initializer_t>(),
+    mla_array_list_empty<mla_init_struct(mla_task_t)>(),
     mla_rw_lock_create("TaskManager")
 };
 
@@ -177,9 +177,9 @@ mla_bool_t mla_task_manager_abort_task(const mla_string_t& name) {
     return true;
 }
 
-mla_array_list_t<mla_task_info_t, mla_task_info_initializer> mla_task_manager_get_task_infos() {
+mla_array_list_t<mla_init_struct(mla_task_info_t)> mla_task_manager_get_task_infos() {
 
-    mla_array_list_t<mla_task_info_t, mla_task_info_initializer> result = mla_array_list_empty<mla_task_info_t, mla_task_info_initializer>();
+    mla_array_list_t<mla_init_struct(mla_task_info_t)> result = mla_array_list_empty<mla_init_struct(mla_task_info_t)>();
 
     if (!mla_rw_lock_read(g_TaskManager.taskLock)) {
         return result;

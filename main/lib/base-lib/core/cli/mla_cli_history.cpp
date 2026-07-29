@@ -52,11 +52,11 @@ void mla_cli_history_record_value(mla_cli_history_store_t &store, const mla_stri
     mla_array_list_add(store.entries, new_entry);
 }
 
-mla_array_list_t<mla_string_t, mla_string_initializer> mla_cli_history_get_candidates(const mla_cli_history_store_t &store,
+mla_array_list_t<mla_init_struct(mla_string_t)> mla_cli_history_get_candidates(const mla_cli_history_store_t &store,
                                                                                       const mla_string_t &key,
                                                                                       const mla_string_t &prefix) {
-    mla_array_list_t<mla_string_t, mla_string_initializer> result =
-        mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> result =
+        mla_array_list_empty<mla_init_struct(mla_string_t)>();
 
     for (mla_size_t i = 0; i < mla_array_list_size(store.entries); ++i) {
         const mla_cli_history_entry_t &entry = mla_array_list_get_unsafe(store.entries, i);

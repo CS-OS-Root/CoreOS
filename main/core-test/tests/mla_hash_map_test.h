@@ -50,7 +50,7 @@ struct my_hash_map_with_const_test_struct {
 
 void HashMapContainsTest() {
 
-    mla_hash_map_t<mla_int32_t, mla_int32_t, mla_int32_hash_t> map = mla_hash_map<mla_int32_t, mla_int32_t, mla_int32_hash_t>(10);
+    mla_hash_map_t<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(mla_int32_t)> map = mla_hash_map<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(mla_int32_t)>(10);
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(1), mla_s_cast<mla_int32_t>(100));
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(2), mla_s_cast<mla_int32_t>(200));
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(3), mla_s_cast<mla_int32_t>(300));
@@ -68,7 +68,7 @@ void HashMapContainsTest() {
 
 void HashMapGetTest() {
 
-    mla_hash_map_t<mla_int32_t, mla_int32_t, mla_int32_hash_t> map = mla_hash_map<mla_int32_t, mla_int32_t, mla_int32_hash_t>(10);
+    mla_hash_map_t<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(mla_int32_t)> map = mla_hash_map<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(mla_int32_t)>(10);
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(1), mla_s_cast<mla_int32_t>(100));
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(2), mla_s_cast<mla_int32_t>(200));
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(3), mla_s_cast<mla_int32_t>(300));
@@ -84,7 +84,7 @@ void HashMapGetTest() {
 
 void HashMapAddMuchItemsTest() {
 
-    mla_hash_map_t<mla_int32_t, mla_int32_t, mla_int32_hash_t> map = mla_hash_map<mla_int32_t, mla_int32_t, mla_int32_hash_t>(16);
+    mla_hash_map_t<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(mla_int32_t)> map = mla_hash_map<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(mla_int32_t)>(16);
 
     for (mla_int32_t i = 0; i < 1000; ++i) {
         mla_hash_map_push(map, i, i + 1000);
@@ -100,7 +100,7 @@ void HashMapAddMuchItemsTest() {
 
 void HashMapRemoveTest() {
 
-    mla_hash_map_t<mla_int32_t, mla_int32_t, mla_int32_hash_t> map = mla_hash_map<mla_int32_t, mla_int32_t, mla_int32_hash_t>(10);
+    mla_hash_map_t<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(mla_int32_t)> map = mla_hash_map<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(mla_int32_t)>(10);
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(1), mla_s_cast<mla_int32_t>(100));
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(2), mla_s_cast<mla_int32_t>(200));
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(3), mla_s_cast<mla_int32_t>(300));
@@ -114,7 +114,7 @@ void HashMapRemoveTest() {
 
 void HashMapClearTest() {
 
-    mla_hash_map_t<mla_int32_t, mla_int32_t, mla_int32_hash_t> map = mla_hash_map<mla_int32_t, mla_int32_t, mla_int32_hash_t>(10);
+    mla_hash_map_t<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(mla_int32_t)> map = mla_hash_map<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(mla_int32_t)>(10);
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(1), mla_s_cast<mla_int32_t>(100));
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(2), mla_s_cast<mla_int32_t>(200));
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(3), mla_s_cast<mla_int32_t>(300));
@@ -127,7 +127,7 @@ void HashMapClearTest() {
 
 void HashMapGetKeysTest() {
 
-    mla_hash_map_t<mla_int32_t, mla_int32_t, mla_int32_hash_t> map = mla_hash_map<mla_int32_t, mla_int32_t, mla_int32_hash_t>(10);
+    mla_hash_map_t<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(mla_int32_t)> map = mla_hash_map<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(mla_int32_t)>(10);
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(1), mla_s_cast<mla_int32_t>(100));
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(2), mla_s_cast<mla_int32_t>(200));
     mla_hash_map_push(map, mla_s_cast<mla_int32_t>(3), mla_s_cast<mla_int32_t>(300));
@@ -145,7 +145,7 @@ void HashMapGetKeysTest() {
 
 void HashMapContainsMlaStringTest() {
 
-    mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer> map = mla_hash_map<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer>(10);
+    mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> map = mla_hash_map<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>(10);
 
     mla_hash_map_push(map,  mla_string("key1"), mla_string("value1"));
     mla_hash_map_push(map,  mla_string("key2"), mla_string("value2"));
@@ -160,7 +160,7 @@ void HashMapContainsMlaStringTest() {
 
 void HashMapWithValueStructTest() {
 
-    mla_hash_map_t<mla_int32_t, my_hash_map_test_struct, mla_int32_hash_t> map = mla_hash_map<mla_int32_t, my_hash_map_test_struct, mla_int32_hash_t>(10);
+    mla_hash_map_t<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(my_hash_map_test_struct)> map = mla_hash_map<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(my_hash_map_test_struct)>(10);
 
     my_hash_map_test_struct item1 = {1, 100};
     my_hash_map_test_struct item2 = {2, 200};
@@ -197,7 +197,7 @@ void HashMapWithValueStructTest() {
 
 void HashMapWithValueConstStructTest() {
 
-    mla_hash_map_t<mla_int32_t, my_hash_map_with_const_test_struct, mla_int32_hash_t> map = mla_hash_map<mla_int32_t, my_hash_map_with_const_test_struct, mla_int32_hash_t>(10);
+    mla_hash_map_t<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(my_hash_map_with_const_test_struct)> map = mla_hash_map<mla_init_data(mla_int32_t), mla_int32_hash_t, mla_init_data(my_hash_map_with_const_test_struct)>(10);
 
     my_hash_map_with_const_test_struct item1 = {1, 100};
     my_hash_map_with_const_test_struct item2 = {2, 200};
@@ -252,7 +252,7 @@ void HashMapItemMemoryManagementTest() {
     }
 
 
-    mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer> mla_map = mla_hash_map<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer>();
+    mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> mla_map = mla_hash_map<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
     mla_hash_map_push(mla_map, mla_str1, mla_str2);
     mla_hash_map_push(mla_map, mla_str2, mla_str1);
 
@@ -319,7 +319,7 @@ void HashMapItemMemoryManagementDestroyTest() {
     }
 
     {
-        mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer> mla_map = mla_hash_map<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer>();
+        mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> mla_map = mla_hash_map<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
         mla_hash_map_push(mla_map, mla_str1, mla_str2);
         mla_hash_map_push(mla_map, mla_str2, mla_str1);
 
@@ -375,10 +375,10 @@ void HashMapItemMemoryManagementDestroy2Test() {
 
     {
 
-        mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer> other = mla_hash_map<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer>();
+        mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> other = mla_hash_map<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
 
         {
-            mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer> mla_map = mla_hash_map<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer>();
+            mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> mla_map = mla_hash_map<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
             mla_hash_map_push(mla_map, mla_str1, mla_str2);
             mla_hash_map_push(mla_map, mla_str2, mla_str1);
 
@@ -489,11 +489,11 @@ void RegisterHashMapTests(mla_test_executor_t &p_TestExecutor) {
     mla_test_executor_register_test(p_TestExecutor, test);
 }
 
-static mla_hash_map_t<short, short, mla_int16_hash_t> mla_map = mla_hash_map_empty<short, short, mla_int16_hash_t>();
+static mla_hash_map_t<mla_init_data(short), mla_int16_hash_t, mla_init_data(short)> mla_map = mla_hash_map_empty<mla_init_data(short), mla_int16_hash_t, mla_init_data(short)>();
 
 void SetupHashMapContainsBenchmark() {
 
-    mla_map = mla_hash_map<short, short, mla_int16_hash_t>(16);
+    mla_map = mla_hash_map<mla_init_data(short), mla_int16_hash_t, mla_init_data(short)>(16);
 
     for (short i = 0; i < CONST_LIST_CONTAINS_COUNT; ++i) {
         mla_hash_map_push(mla_map, i, i);
@@ -516,13 +516,13 @@ void HashMapContainsBenchmark() {
 
 void TearDownHashMapContainsBenchmark() {
 
-    mla_map = mla_hash_map_empty<short, short, mla_int16_hash_t>();
+    mla_map = mla_hash_map_empty<mla_init_data(short), mla_int16_hash_t, mla_init_data(short)>();
 }
 
 
 void HashMapAddMuchItemsBenchmark() {
 
-    mla_hash_map_t<short, short, mla_int16_hash_t> local_map = mla_hash_map<short, short, mla_int16_hash_t>(16);
+    mla_hash_map_t<mla_init_data(short), mla_int16_hash_t, mla_init_data(short)> local_map = mla_hash_map<mla_init_data(short), mla_int16_hash_t, mla_init_data(short)>(16);
 
     for (short i = 0; i < 1000; ++i) {
         mla_hash_map_push(local_map, i, i);

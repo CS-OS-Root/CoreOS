@@ -328,7 +328,7 @@ inline void AutoCompleteWithNoMatches() {
     assert_equal(mla_array_list_size(result.possibleAutoCompletions), (mla_size_t)0, "There should be no auto completions for non-matching prefix");
 }
 
-static mla_array_list_t<mla_string_t, mla_string_initializer> format_param_autocomplete(
+static mla_array_list_t<mla_init_struct(mla_string_t)> format_param_autocomplete(
     const mla_cli_command_t &command,
     const mla_string_t &parameterName,
     const mla_string_t &currentValuePrefix,
@@ -368,7 +368,7 @@ inline void AutoCompleteParameterValuesFixedList() {
     assert_equal(mla_array_list_size(result3.possibleAutoCompletions), (mla_size_t)4, "Should have 4 completions for empty prefix");
 }
 
-static mla_array_list_t<mla_string_t, mla_string_initializer> host_dynamic_autocomplete(
+static mla_array_list_t<mla_init_struct(mla_string_t)> host_dynamic_autocomplete(
     const mla_cli_command_t &command,
     const mla_string_t &parameterName,
     const mla_string_t &currentValuePrefix,
@@ -376,8 +376,8 @@ static mla_array_list_t<mla_string_t, mla_string_initializer> host_dynamic_autoc
     (void)command;
     (void)parameterName;
     (void)userData;
-    mla_array_list_t<mla_string_t, mla_string_initializer> list =
-        mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> list =
+        mla_array_list_empty<mla_init_struct(mla_string_t)>();
     mla_array_list_add(list, mla_string_const("localhost"));
     mla_array_list_add(list, mla_string_const("127.0.0.1"));
     mla_array_list_add(list, mla_string_const("192.168.1.1"));

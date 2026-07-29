@@ -1057,7 +1057,7 @@ void TrimTest() {
 void SplitTest() {
     // Test basic split
     mla_string_t str = mla_string("apple,banana,cherry");
-    mla_array_list_t<mla_string_t, mla_string_initializer> result = mla_string_split(str, mla_string(","));
+    mla_array_list_t<mla_init_struct(mla_string_t)> result = mla_string_split(str, mla_string(","));
 
     if (mla_array_list_size(result) == 3) {
         assert_true(mla_string_equals(mla_array_list_get_unsafe(result, 0), mla_string("apple")), "First substring should be 'apple'");
@@ -1119,7 +1119,7 @@ void SplitTest() {
 }
 
 void JoinTest() {
-    mla_array_list_t<mla_string_t, mla_string_initializer> parts = mla_array_list<mla_string_t, mla_string_initializer>(3);
+    mla_array_list_t<mla_init_struct(mla_string_t)> parts = mla_array_list<mla_init_struct(mla_string_t)>(3);
     mla_array_list_add(parts, mla_string("apple"));
     mla_array_list_add(parts, mla_string("banana"));
     mla_array_list_add(parts, mla_string("cherry"));
@@ -1127,12 +1127,12 @@ void JoinTest() {
     mla_string_t joined = mla_string_join(parts, mla_string(","));
     assert_true(mla_string_equals(joined, mla_string("apple,banana,cherry")), "Join should concatenate with delimiter");
 
-    mla_array_list_t<mla_string_t, mla_string_initializer> singlePart = mla_array_list<mla_string_t, mla_string_initializer>(1);
+    mla_array_list_t<mla_init_struct(mla_string_t)> singlePart = mla_array_list<mla_init_struct(mla_string_t)>(1);
     mla_array_list_add(singlePart, mla_string("only"));
     mla_string_t singleJoin = mla_string_join(singlePart, mla_string(","));
     assert_true(mla_string_equals(singleJoin, mla_string("only")), "Join with one element should return the element unchanged");
 
-    mla_array_list_t<mla_string_t, mla_string_initializer> emptyParts = mla_array_list<mla_string_t, mla_string_initializer>(0);
+    mla_array_list_t<mla_init_struct(mla_string_t)> emptyParts = mla_array_list<mla_init_struct(mla_string_t)>(0);
     mla_string_t emptyJoin = mla_string_join(emptyParts, mla_string(","));
     assert_true(mla_string_is_empty(emptyJoin), "Join on empty list should return empty string");
 }

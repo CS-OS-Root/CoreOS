@@ -16,7 +16,7 @@ struct main_app_main_window_t {
 
     static void mla_private_primary_button_clicked(mla_ui_control_t &control,
                                                   const mla_ui_surface_input_event_click_t &clickEvent,
-                                                  mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t> &
+                                                  mla_array_list_t<mla_init_struct(mla_ui_control_t)> &
                                                   uiControls, mla_user_data_t &userData) {
         (void) control;
         (void) clickEvent;
@@ -32,7 +32,7 @@ struct main_app_main_window_t {
         mla_ui_button_set_disable(*disabledButton, !mla_ui_button_get_disable(*disabledButton));
     }
 
-    static mla_bool_t renderer(mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t> &root, const mla_ui_surface_size_t& surfaceSize, const mla_ui_surface_input_states_t &input_states) {
+    static mla_bool_t renderer(mla_array_list_t<mla_init_struct(mla_ui_control_t)> &root, const mla_ui_surface_size_t& surfaceSize, const mla_ui_surface_input_states_t &input_states) {
 
         if (mla_array_list_size(root) > 0) {
             return true;
@@ -287,7 +287,7 @@ struct main_app_main_window_t {
 
 struct main_app_main_window_performance_t {
 
-    static mla_bool_t renderer(mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t> &root, const mla_ui_surface_size_t& surfaceSize, const mla_ui_surface_input_states_t &input_states) {
+    static mla_bool_t renderer(mla_array_list_t<mla_init_struct(mla_ui_control_t)> &root, const mla_ui_surface_size_t& surfaceSize, const mla_ui_surface_input_states_t &input_states) {
 
         (void)input_states;
 

@@ -29,6 +29,10 @@ struct mla_ui_rpc_surface_info_t {
 
     }
 
+    static mla_ui_rpc_surface_info_t init() {
+        return { mla_string_empty(), mla_string_empty() };
+    }
+
 };
 
 mla_ui_rpc_surface_info_t mla_ui_rpc_surface_info_empty() {
@@ -38,14 +42,8 @@ mla_ui_rpc_surface_info_t mla_ui_rpc_surface_info_empty() {
     };
 }
 
-struct mla_ui_rpc_surface_info_t_initializer {
-    static mla_ui_rpc_surface_info_t init() {
-        return mla_ui_rpc_surface_info_empty();
-    }
-};
-
 struct mla_ui_rpc_surface_infos_t {
-    mla_array_list_t<mla_ui_rpc_surface_info_t, mla_ui_rpc_surface_info_t_initializer> surfaces;
+    mla_array_list_t<mla_init_struct(mla_ui_rpc_surface_info_t)> surfaces;
 
     static mla_bool_t serialize(mla_serializer_t& serializer, const mla_pointer_t& obj) {
 
@@ -63,7 +61,7 @@ struct mla_ui_rpc_surface_infos_t {
 
 mla_ui_rpc_surface_infos_t mla_ui_rpc_surface_infos_empty() {
     return {
-        mla_array_list_empty<mla_ui_rpc_surface_info_t, mla_ui_rpc_surface_info_t_initializer>()
+        mla_array_list_empty<mla_init_struct(mla_ui_rpc_surface_info_t)>()
     };
 }
 
@@ -121,7 +119,7 @@ mla_bool_t mla_private_ui_http_server_handler(mla_http_server_t& http_server, co
 
         // Gather surface infos
         mla_ui_rpc_surface_infos_t surfaceInfos = mla_ui_rpc_surface_infos_empty();
-        mla_array_list_t<mla_http_server_websocket_handler_item_t, mla_http_server_websocket_handler_item_initializer> surfaces = mla_http_server_get_websocket_handler_for_path(http_server, mla_string_const(mla_ui_web_socket_surface_path_prefix));
+        mla_array_list_t<mla_init_struct(mla_http_server_websocket_handler_item_t)> surfaces = mla_http_server_get_websocket_handler_for_path(http_server, mla_string_const(mla_ui_web_socket_surface_path_prefix));
 
         for (mla_size_t i = 0; i < mla_array_list_size(surfaces); i++) {
             mla_http_server_websocket_handler_item_t& handlerItem = mla_array_list_get_unsafe(surfaces, i);
@@ -322,7 +320,7 @@ mla_task_process_result_state mla_private_ui_http_server_web_surface_render_and_
     }
 
     mla_string_t final_url = mla_private_ui_http_server_web_surface_path_from_surface_name(taskData->surfaceName);
-    mla_array_list_t<mla_http_server_websocket_connection_t, mla_http_server_websocket_connection_initializer> connections = mla_http_server_find_websocket_connections(http_server, final_url);
+    mla_array_list_t<mla_init_struct(mla_http_server_websocket_connection_t)> connections = mla_http_server_find_websocket_connections(http_server, final_url);
 
     // Process each connected client
     for (mla_size_t i = 0; i < mla_array_list_size(connections); i++) {

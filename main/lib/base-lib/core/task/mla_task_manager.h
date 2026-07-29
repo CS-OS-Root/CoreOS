@@ -19,9 +19,6 @@ struct mla_task_info_t {
     mla_task_priority priority; // Priority of the task
     mla_task_stack_size stack_size; // Stack size for the task
     mla_task_state state; // Current state of the task
-};
-
-struct mla_task_info_initializer {
 
     static mla_task_info_t init() {
         return {
@@ -34,7 +31,7 @@ struct mla_task_info_initializer {
 };
 
 struct mla_task_manager_t {
-    mla_array_list_t<mla_task_t, mla_task_initializer_t> tasks;
+    mla_array_list_t<mla_init_struct(mla_task_t)> tasks;
     mla_rw_lock_t taskLock;
 };
 
@@ -47,7 +44,7 @@ enum mla_task_manager_state: mla_uint8_t {
 void mla_task_manager_cleanup();
 mla_bool_t mla_task_manager_register_task(mla_task_t task);
 mla_bool_t mla_task_manager_abort_task(const mla_string_t& name);
-mla_array_list_t<mla_task_info_t, mla_task_info_initializer> mla_task_manager_get_task_infos();
+mla_array_list_t<mla_init_struct(mla_task_info_t)> mla_task_manager_get_task_infos();
 mla_task_info_t mla_task_manager_get_task_info(const mla_string_t& name);
 mla_bool_t mla_task_manager_task_exists(const mla_string_t& name);
 mla_task_manager_state mla_task_manager_get_state();

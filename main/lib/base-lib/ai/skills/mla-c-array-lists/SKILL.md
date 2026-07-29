@@ -186,8 +186,8 @@ for (mla_size_t i = 0; i < mla_array_list_size(list); i++) {
 ### With Strings
 
 ```cpp
-mla_array_list_t<mla_string_t, mla_string_initializer> tags =
-    mla_array_list<mla_string_t, mla_string_initializer>(4);
+mla_array_list_t<mla_init_struct(mla_string_t)> tags =
+    mla_array_list<mla_init_struct(mla_string_t)>(4);
 
 mla_array_list_add(tags, mla_string_const("alpha"));
 mla_array_list_add(tags, mla_string_const("beta"));
@@ -213,13 +213,13 @@ mla_array_list_remove(stack, last);
 
 ## Initializer for Containers
 
-When using `mla_array_list_t` inside `mla_hash_map_t` or nested lists, provide an initializer:
+Static `init()` is defined directly inside target structs:
 
 ```cpp
-template <typename T, typename TInit>
-struct mla_array_list_initializer {
-    static mla_array_list_t<T, TInit> init() {
-        return mla_array_list_empty<T, TInit>();
+struct my_struct_t {
+    mla_string_t name;
+    static my_struct_t init() {
+        return { mla_string_empty() };
     }
 };
 ```
@@ -227,8 +227,9 @@ struct mla_array_list_initializer {
 ## Rules
 
 - **Never** use `std::vector`, `new[]`, or C arrays for dynamic collections.
-- Always use `mla_string_initializer` as `TInit` when storing `mla_string_t` elements.
-- The `TInit::init()` function is called when elements are removed or the list is cleared — it acts as a destructor for the element's slot.
+- Use `mla_init_struct(T)` as container template parameter for structs with static `init()` method.
+- Use `mla_init_data(T)` for primitive data types and POD structs without static `init()`.
+- Static `init()` function is called when elements are removed or the list is cleared — it acts as a reset/cleanup for the element slot.
 - Do **not** modify the list (add/remove) while iterating by index — indices shift on removal.
 - Pointers from `mla_array_list_get_ref` are invalidated when the list resizes (add triggers realloc if capacity is exceeded).
 - Use `mla_array_list_get_unsafe` only when the index has been validated.

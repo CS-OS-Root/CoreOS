@@ -167,7 +167,7 @@ mla_bool_t mla_websocket_client_connect(mla_websocket_client_t &client, const ml
     }
 
     // Read and verify headers
-    mla_array_list_t<mla_http_header_t, mla_http_header_initializer> headers = mla_array_list<mla_http_header_t, mla_http_header_initializer>();
+    mla_array_list_t<mla_init_struct(mla_http_header_t)> headers = mla_array_list<mla_init_struct(mla_http_header_t)>();
     if (!mla_http_utils_read_headers(headers, input, timeout_ms)) {
         return false;
     }

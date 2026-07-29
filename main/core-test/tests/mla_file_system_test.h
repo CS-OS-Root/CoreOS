@@ -358,7 +358,7 @@ void FileSystemListDirectoryTest() {
     (void)stream;
 
     // List directory contents
-    mla_array_list_t<mla_string_t, mla_string_initializer> entries = mla_array_list_empty<mla_string_t, mla_string_initializer>();;
+    mla_array_list_t<mla_init_struct(mla_string_t)> entries = mla_array_list_empty<mla_init_struct(mla_string_t)>();
     assert_true(mla_fs_list_directory(mla_string("/listtest/"), entries),
                 "Should list directory contents");
 
@@ -390,7 +390,7 @@ void FileSystemListFilesTest() {
     (void)stream;
 
     // List only files
-    mla_array_list_t<mla_string_t, mla_string_initializer> files = mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> files = mla_array_list_empty<mla_init_struct(mla_string_t)>();
     assert_true(mla_fs_list_files(mla_string("/filestest/"), files),
                 "Should list files");
 

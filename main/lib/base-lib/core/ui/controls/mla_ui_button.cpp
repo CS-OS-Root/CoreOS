@@ -13,7 +13,7 @@ static void mla_private_ui_button_calc_text_size(const mla_ui_control_context_t 
     }
 }
 
-mla_bool_t mla_private_ui_button_process_click_event(mla_ui_control_t &control, const mla_ui_surface_input_event_click_t &clickEvent, const mla_ui_control_input_area_t &inputArea, mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t> &uiControls, mla_user_data_t& userData) {
+mla_bool_t mla_private_ui_button_process_click_event(mla_ui_control_t &control, const mla_ui_surface_input_event_click_t &clickEvent, const mla_ui_control_input_area_t &inputArea, mla_array_list_t<mla_init_struct(mla_ui_control_t)> &uiControls, mla_user_data_t& userData) {
 
     if (clickEvent.button != MLA_UI_SURFACE_INPUT_EVENT_CLICK_BUTTON_LEFT) {
         return false;
@@ -36,7 +36,7 @@ mla_bool_t mla_private_ui_button_process_click_event(mla_ui_control_t &control, 
     return true;
 }
 
-mla_bool_t mla_private_ui_button_render_to_drawCommands(const mla_ui_control_context_t &context, const mla_ui_control_t &element, mla_array_list_t<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t>& drawCommands, mla_array_list_t<mla_ui_control_input_area_t, mla_ui_control_input_area_initializer_t> &inputAreas) {
+mla_bool_t mla_private_ui_button_render_to_drawCommands(const mla_ui_control_context_t &context, const mla_ui_control_t &element, mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)>& drawCommands, mla_array_list_t<mla_init_struct(mla_ui_control_input_area_t)> &inputAreas) {
 
     mla_double_t x = element.layout.x;
     mla_double_t y = element.layout.y;

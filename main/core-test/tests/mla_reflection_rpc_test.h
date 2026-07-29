@@ -16,6 +16,10 @@ struct test_rpc_simple_struct_t {
     mla_uint32_t id;
     mla_bool_t active;
 
+    static test_rpc_simple_struct_t init() {
+        return { mla_string_empty(), 0, false };
+    }
+
     static mla_bool_t serialize(mla_serializer_t& serializer, const mla_pointer_t& obj) {
         const test_rpc_simple_struct_t* test_struct = mla_pointer_get_data<const test_rpc_simple_struct_t>(obj);
 
@@ -98,14 +102,8 @@ struct test_rpc_nested_struct_t {
     }
 };
 
-struct test_rpc_list_struct_initializer {
-    static test_rpc_simple_struct_t init() {
-        return { mla_string_empty(), 0, false };
-    }
-};
-
 struct test_rpc_with_list_struct_t {
-    mla_array_list_t<test_rpc_simple_struct_t, test_rpc_list_struct_initializer> items;
+    mla_array_list_t<mla_init_struct(test_rpc_simple_struct_t)> items;
     mla_uint32_t count;
 
     static mla_bool_t serialize(mla_serializer_t& serializer, const mla_pointer_t& obj) {

@@ -32,11 +32,7 @@ struct mla_global_ui_surface_windows_direct2d_font_cache_item {
 
 };
 
-struct mla_global_ui_surface_windows_direct2d_font_cache_item_initializer {
-    static mla_global_ui_surface_windows_direct2d_font_cache_item init() {
-        return mla_global_ui_surface_windows_direct2d_font_cache_item::init();
-    }
-};
+
 
 // Render cache structure for performance optimization
 struct la_global_ui_surface_windows_direct2d_Cache {
@@ -45,15 +41,13 @@ struct la_global_ui_surface_windows_direct2d_Cache {
     D2D1_COLOR_F currentFillColor;
 
     // Font cache
-    mla_array_list_t<mla_global_ui_surface_windows_direct2d_font_cache_item,
-        mla_global_ui_surface_windows_direct2d_font_cache_item_initializer> fontCache;
+    mla_array_list_t<mla_init_struct(mla_global_ui_surface_windows_direct2d_font_cache_item)> fontCache;
 
     static la_global_ui_surface_windows_direct2d_Cache init() {
         return {
             mla_pointer_null(),
             {0, 0, 0, 0},
-            mla_array_list_empty<mla_global_ui_surface_windows_direct2d_font_cache_item,
-                mla_global_ui_surface_windows_direct2d_font_cache_item_initializer>()
+            mla_array_list_empty<mla_init_struct(mla_global_ui_surface_windows_direct2d_font_cache_item)>()
         };
     }
 
@@ -510,10 +504,8 @@ mla_ui_surface_draw_size_t mla_private_windows_surface_calc_text_size(const mla_
 
 
 mla_bool_t mla_private_windows_surface_render_draw_commands(const mla_ui_surface_t &surface,
-                                                  const mla_array_list_t<mla_ui_surface_draw_command_t,
-                                                      mla_ui_surface_draw_command_initializer_t> &drawCommands,
-                                                  mla_array_list_t<mla_ui_surface_input_event_t,
-                                                      mla_ui_surface_input_event_initializer_t> &eventsSinceLastFame, mla_uint64_t timeSinceLastFrameMs) {
+                                                  const mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)> &drawCommands,
+                                                  mla_array_list_t<mla_init_struct(mla_ui_surface_input_event_t)> &eventsSinceLastFame, mla_uint64_t timeSinceLastFrameMs) {
 
     mla_windows_window_surface_t *window_surface = mla_pointer_get_data<mla_windows_window_surface_t>(surface.resource);
     if (window_surface == nullptr) {

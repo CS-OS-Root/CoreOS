@@ -7,7 +7,7 @@
 
 mla_bool_t mla_private_ui_text_edit_process_char_input_event(mla_ui_control_t &control,
                                                        const mla_ui_surface_input_event_char_input_t &charInputEvent,
-                                                       mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t>
+                                                       mla_array_list_t<mla_init_struct(mla_ui_control_t)>
                                                        &uiControls, mla_user_data_t& userData) {
     mla_string_t currentText = mla_ui_text_edit_get_text(control);
     mla_size_t cursorPosition = mla_ui_text_edit_get_cursor_position(control);
@@ -165,10 +165,8 @@ mla_bool_t mla_private_ui_text_edit_process_char_input_event(mla_ui_control_t &c
 
 mla_bool_t mla_private_ui_text_edit_render_to_drawCommands(const mla_ui_control_context_t &context,
                                                      const mla_ui_control_t &element,
-                                                     mla_array_list_t<mla_ui_surface_draw_command_t,
-                                                         mla_ui_surface_draw_command_initializer_t> &drawCommands,
-                                                     mla_array_list_t<mla_ui_control_input_area_t,
-                                                         mla_ui_control_input_area_initializer_t> &inputAreas) {
+                                                     mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)> &drawCommands,
+                                                     mla_array_list_t<mla_init_struct(mla_ui_control_input_area_t)> &inputAreas) {
     mla_double_t x = element.layout.x;
     mla_double_t y = element.layout.y;
     mla_double_t w = element.layout.width;

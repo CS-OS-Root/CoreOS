@@ -256,7 +256,7 @@ mla_bool_t mla_private_file_system_native_os_absolute_path(mla_file_system_t& fi
     return true;
 }
 
-mla_bool_t mla_private_file_system_native_list_files(mla_file_system_t& file_system, const mla_string_t& path, mla_array_list_t<mla_string_t, mla_string_initializer>& out_entries) {
+mla_bool_t mla_private_file_system_native_list_files(mla_file_system_t& file_system, const mla_string_t& path, mla_array_list_t<mla_init_struct(mla_string_t)>& out_entries) {
 
     mla_file_system_native_t* fs = mla_private_file_system_native_get_native_data(file_system);
 
@@ -298,7 +298,7 @@ mla_bool_t mla_private_file_system_native_list_files(mla_file_system_t& file_sys
     return true;
 }
 
-mla_bool_t mla_private_file_system_native_list_directory(mla_file_system_t& file_system, const mla_string_t& path, mla_array_list_t<mla_string_t, mla_string_initializer>& out_entries) {
+mla_bool_t mla_private_file_system_native_list_directory(mla_file_system_t& file_system, const mla_string_t& path, mla_array_list_t<mla_init_struct(mla_string_t)>& out_entries) {
 
     mla_file_system_native_t* fs = mla_private_file_system_native_get_native_data(file_system);
 

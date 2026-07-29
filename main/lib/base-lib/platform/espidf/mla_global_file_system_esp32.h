@@ -108,7 +108,7 @@ static inline mla_bool_t mla_private_file_system_native_delete_directory(mla_fil
     return result == 0;
 }
 
-static inline mla_bool_t mla_private_file_system_native_list_files(mla_file_system_t& file_system, const mla_string_t& path, mla_array_list_t<mla_string_t, mla_string_initializer>& out_entries) {
+static inline mla_bool_t mla_private_file_system_native_list_files(mla_file_system_t& file_system, const mla_string_t& path, mla_array_list_t<mla_init_struct(mla_string_t)>& out_entries) {
     mla_file_system_native_t* fs = mla_r_cast<mla_file_system_native_t*>(file_system.user_data);
     mla_string_t fullPath = mla_private_file_system_native_file_path_to_full_path(fs, path);
 
@@ -134,7 +134,7 @@ static inline mla_bool_t mla_private_file_system_native_list_files(mla_file_syst
     return true;
 }
 
-static inline mla_bool_t mla_private_file_system_native_list_directory(mla_file_system_t& file_system, const mla_string_t& path, mla_array_list_t<mla_string_t, mla_string_initializer>& out_entries) {
+static inline mla_bool_t mla_private_file_system_native_list_directory(mla_file_system_t& file_system, const mla_string_t& path, mla_array_list_t<mla_init_struct(mla_string_t)>& out_entries) {
     mla_file_system_native_t* fs = mla_r_cast<mla_file_system_native_t*>(file_system.user_data);
     mla_string_t fullPath = mla_private_file_system_native_file_path_to_full_path(fs, path);
 

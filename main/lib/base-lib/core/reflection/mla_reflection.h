@@ -42,9 +42,7 @@ struct mla_reflection_struct_field_t {
     mla_reflection_type_t type;
     mla_reflection_type_t element_type; // For lists
     mla_reflection_struct_metadata_provider_t struct_provider;
-};
 
-struct mla_reflection_struct_field_initializer {
     static mla_reflection_struct_field_t init() {
         return { mla_string_empty(), 0, MLA_REFLECTION_TYPE_INVALID, MLA_REFLECTION_TYPE_INVALID, nullptr };
     }
@@ -54,7 +52,11 @@ struct mla_reflection_struct_metadata_t {
     mla_string_t name;
     mla_size_t size;
     mla_bool_t frozen;
-    mla_array_list_t<mla_reflection_struct_field_t, mla_reflection_struct_field_initializer> fields;
+    mla_array_list_t<mla_init_struct(mla_reflection_struct_field_t)> fields;
+
+    static mla_reflection_struct_metadata_t init() {
+        return { mla_string_empty(), 0, false, mla_array_list_empty<mla_init_struct(mla_reflection_struct_field_t)>() };
+    }
 };
 
 mla_reflection_struct_metadata_t mla_reflection_struct_metadata_invalid();
@@ -70,12 +72,6 @@ mla_reflection_struct_metadata_for(mla_reflection_struct_name_as_string(T), size
 void mla_reflection_struct_metadata_add_field(mla_reflection_struct_metadata_t& metadata, const mla_reflection_struct_field_t &field);
 void mla_reflection_struct_metadata_freeze(mla_reflection_struct_metadata_t& metadata);
 mla_reflection_struct_field_t mla_reflection_struct_field(const mla_string_t &name, mla_size_t offset, mla_reflection_type_t type, mla_reflection_type_t element_type, const mla_reflection_struct_metadata_provider_t& struct_metadata_provider);
-
-struct mla_reflection_struct_metadata_initializer {
-    static mla_reflection_struct_metadata_t init() {
-        return mla_reflection_struct_metadata_invalid();
-    }
-};
 
 typedef mla_reflection_struct_metadata_t (*mla_reflection_struct_metadata_provider_t)();
 

@@ -8,7 +8,7 @@
 #include "mla_ui_control.h"
 #include "mla_ui_style.h"
 
-typedef void (*mla_ui_text_edit_text_changed_t)(mla_ui_control_t &control, mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t> &uiControls, mla_user_data_t& userData);
+typedef void (*mla_ui_text_edit_text_changed_t)(mla_ui_control_t &control, mla_array_list_t<mla_init_struct(mla_ui_control_t)> &uiControls, mla_user_data_t& userData);
 
 mla_ui_control_t mla_ui_text_edit();
 

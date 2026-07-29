@@ -38,6 +38,15 @@ struct mla_http_server_handler_item_t {
     mla_string_t method;
     mla_http_request_handler_checker_t checker;
     mla_http_request_handler_t executor;
+
+    static mla_http_server_handler_item_t init() {
+        return {
+            mla_user_data_empty(),
+            mla_string_empty(),
+            nullptr,
+            nullptr
+        };
+    }
 };
 
 mla_http_server_handler_item_t mla_http_server_handler_invalid();
@@ -102,16 +111,7 @@ mla_http_server_handler_item_t mla_http_server_handler_struct_all(const mla_stri
 }
 
 
-struct mla_http_server_handler_item_initializer {
-    static mla_http_server_handler_item_t init() {
-        return {
-            mla_user_data_empty(),
-            mla_string_empty(),
-            nullptr,
-            nullptr
-        };
-    }
-};
+
 
 ///////////////////////////////////
 /// HTTP Server WebSocket Handler Item
@@ -137,15 +137,15 @@ struct mla_http_server_websocket_connection_t {
     mla_http_websocket_text_message_handler_t text_executor;
     mla_http_websocket_binary_message_handler_t binary_executor;
     mla_http_websocket_closed_handler_t closed_executor;
+
+    static mla_http_server_websocket_connection_t init() {
+        return { nullptr, mla_network_connection_t::init(), mla_string_empty(), mla_string_empty(), mla_mutex_t::init(), mla_user_data_empty(), false, nullptr, nullptr, nullptr, nullptr };
+    }
 };
 
 mla_http_server_websocket_connection_t mla_http_server_websocket_connection_invalid();
 
-struct mla_http_server_websocket_connection_initializer {
-    static mla_http_server_websocket_connection_t init() {
-        return mla_http_server_websocket_connection_invalid();
-    }
-};
+
 
 struct mla_http_server_websocket_handler_item_t {
     mla_user_data_t userdata;
@@ -154,13 +154,7 @@ struct mla_http_server_websocket_handler_item_t {
     mla_http_websocket_text_message_handler_t text_executor;
     mla_http_websocket_binary_message_handler_t binary_executor;
     mla_http_websocket_closed_handler_t close_executor;
-};
 
-mla_http_server_websocket_handler_item_t mla_http_server_websocket_handler(mla_user_data_t& userdata, const mla_http_request_handler_checker_t& checker, const mla_http_websocket_text_message_handler_t& text_message_handler, const mla_http_websocket_binary_message_handler_t& binary_message_handler);
-mla_http_server_websocket_handler_item_t mla_http_server_websocket_handler_path_equals(const mla_string_t& path, const mla_http_websocket_text_message_handler_t& text_message_handler, const mla_http_websocket_binary_message_handler_t& binary_message_handler);
-mla_http_server_websocket_handler_item_t mla_http_server_websocket_handler_invalid();
-
-struct mla_http_server_websocket_handler_item_initializer {
     static mla_http_server_websocket_handler_item_t init() {
         return {
             mla_user_data_empty(),
@@ -173,14 +167,20 @@ struct mla_http_server_websocket_handler_item_initializer {
     }
 };
 
+mla_http_server_websocket_handler_item_t mla_http_server_websocket_handler(mla_user_data_t& userdata, const mla_http_request_handler_checker_t& checker, const mla_http_websocket_text_message_handler_t& text_message_handler, const mla_http_websocket_binary_message_handler_t& binary_message_handler);
+mla_http_server_websocket_handler_item_t mla_http_server_websocket_handler_path_equals(const mla_string_t& path, const mla_http_websocket_text_message_handler_t& text_message_handler, const mla_http_websocket_binary_message_handler_t& binary_message_handler);
+mla_http_server_websocket_handler_item_t mla_http_server_websocket_handler_invalid();
+
+
+
 ////////////////////////////////////
 /// HTTP Server
 ///////////////////////////////////
 
 struct mla_http_server_t {
-    mla_array_list_t<mla_http_server_handler_item_t, mla_http_server_handler_item_initializer> httpHandlers;
-    mla_array_list_t<mla_http_server_websocket_handler_item_t, mla_http_server_websocket_handler_item_initializer> websocketHandlers;
-    mla_array_list_t<mla_http_server_websocket_connection_t, mla_http_server_websocket_connection_initializer> websocketConnections;
+    mla_array_list_t<mla_init_struct(mla_http_server_handler_item_t)> httpHandlers;
+    mla_array_list_t<mla_init_struct(mla_http_server_websocket_handler_item_t)> websocketHandlers;
+    mla_array_list_t<mla_init_struct(mla_http_server_websocket_connection_t)> websocketConnections;
     mla_rw_lock_t websocketConnectionsLock;
     mla_network_host_t host;
     mla_network_listener_t listener;
@@ -209,10 +209,10 @@ mla_bool_t mla_http_server_register_websocket_handler(mla_http_server_t &server,
 
 // WebSocket Methods
 mla_bool_t mla_http_server_find_websocket_connection(mla_http_server_t &server, const mla_string_t& connectionId, mla_http_server_websocket_connection_t& outConnection);
-mla_array_list_t<mla_http_server_websocket_connection_t, mla_http_server_websocket_connection_initializer> mla_http_server_find_websocket_connections(mla_http_server_t &server, const mla_string_t &path_prefix);
+mla_array_list_t<mla_init_struct(mla_http_server_websocket_connection_t)> mla_http_server_find_websocket_connections(mla_http_server_t &server, const mla_string_t &path_prefix);
 mla_size_t mla_http_server_get_websocket_connection_count(mla_http_server_t &server, const mla_string_t &path_prefix);
 mla_bool_t mla_http_server_is_websocket_connection_open(const mla_http_server_websocket_connection_t& connection);
-mla_array_list_t<mla_http_server_websocket_handler_item_t, mla_http_server_websocket_handler_item_initializer> mla_http_server_get_websocket_handler_for_path(mla_http_server_t &server, const mla_string_t& path);
+mla_array_list_t<mla_init_struct(mla_http_server_websocket_handler_item_t)> mla_http_server_get_websocket_handler_for_path(mla_http_server_t &server, const mla_string_t& path);
 
 mla_bool_t mla_http_server_close_websocket_connection(mla_http_server_websocket_connection_t& connection, mla_uint16_t closeCode, const mla_string_t& reason);
 mla_bool_t mla_http_server_close_websocket_connection(mla_http_server_t &server, const mla_string_t& connectionId, mla_uint16_t closeCode, const mla_string_t& reason);

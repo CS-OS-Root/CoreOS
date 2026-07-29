@@ -110,12 +110,7 @@ mla_string_t mla_string(const mla_char_t *p_Data);
 mla_string_t mla_string_copy(const mla_char_t *p_Data, mla_size_t p_Length);
 mla_string_t mla_string_copy(const mla_string_t &p_String);
 
-struct mla_string_initializer {
 
-    static mla_string_t init() {
-        return mla_string_empty();
-    }
-};
 
 mla_size_t mla_string_length(const mla_string_t &p_String);
 const mla_char_t *mla_string_data(const mla_string_t &p_String);
@@ -146,8 +141,8 @@ mla_int32_t mla_string_last_index_of(const mla_string_t &p_String, const mla_str
 mla_string_t mla_string_substr(const mla_string_t &p_String, mla_size_t p_Start);
 mla_string_t mla_string_substr(const mla_string_t &p_String, mla_size_t p_Start, mla_size_t p_Length);
 mla_string_t mla_string_repeat(const mla_string_t &p_String, mla_size_t p_Times);
-mla_array_list_t<mla_string_t, mla_string_initializer> mla_string_split(const mla_string_t &p_String, const mla_string_t &p_Delimiter);
-mla_string_t mla_string_join(const mla_array_list_t<mla_string_t, mla_string_initializer> &p_Strings, const mla_string_t &p_Delimiter);
+mla_array_list_t<mla_init_struct(mla_string_t)> mla_string_split(const mla_string_t &p_String, const mla_string_t &p_Delimiter);
+mla_string_t mla_string_join(const mla_array_list_t<mla_init_struct(mla_string_t)> &p_Strings, const mla_string_t &p_Delimiter);
 mla_string_t mla_string_trim(const mla_string_t &p_String);
 
 // This function returns a multi-byte character at the specified index

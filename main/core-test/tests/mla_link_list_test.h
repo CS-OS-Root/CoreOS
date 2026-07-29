@@ -55,7 +55,7 @@ struct my_link_list_with_const_test_struct {
 
 void LinkListContainsMlaStringTest() {
 
-    mla_link_list_t<mla_string_t, mla_string_initializer> mla_list = mla_link_list<mla_string_t, mla_string_initializer>();
+    mla_link_list_t<mla_init_struct(mla_string_t)> mla_list = mla_link_list<mla_init_struct(mla_string_t)>();
 
     mla_link_list_add(mla_list, mla_string("Hello"));
     mla_link_list_add(mla_list, mla_string("World"));
@@ -173,7 +173,7 @@ void LinkListItemMemoryManagementTest() {
     }
 
 
-    mla_link_list_t<mla_string_t, mla_string_initializer> mla_arr = mla_link_list<mla_string_t, mla_string_initializer>();
+    mla_link_list_t<mla_init_struct(mla_string_t)> mla_arr = mla_link_list<mla_init_struct(mla_string_t)>();
     mla_link_list_add(mla_arr, mla_str1);
     mla_link_list_add(mla_arr, mla_str2);
 
@@ -240,7 +240,7 @@ void LinkListItemMemoryManagementDestroyTest() {
     }
 
     {
-        mla_link_list_t<mla_string_t, mla_string_initializer> mla_arr = mla_link_list<mla_string_t, mla_string_initializer>();
+        mla_link_list_t<mla_init_struct(mla_string_t)> mla_arr = mla_link_list<mla_init_struct(mla_string_t)>();
         mla_link_list_add(mla_arr, mla_str1);
         mla_link_list_add(mla_arr, mla_str2);
 
@@ -296,10 +296,10 @@ void LinkListItemMemoryManagementDestroy2Test() {
 
     {
 
-        mla_link_list_t<mla_string_t, mla_string_initializer> other = mla_link_list<mla_string_t, mla_string_initializer>();
+        mla_link_list_t<mla_init_struct(mla_string_t)> other = mla_link_list<mla_init_struct(mla_string_t)>();
 
         {
-            mla_link_list_t<mla_string_t, mla_string_initializer> mla_arr = mla_link_list<mla_string_t, mla_string_initializer>();
+            mla_link_list_t<mla_init_struct(mla_string_t)> mla_arr = mla_link_list<mla_init_struct(mla_string_t)>();
             mla_link_list_add(mla_arr, mla_str1);
             mla_link_list_add(mla_arr, mla_str2);
 

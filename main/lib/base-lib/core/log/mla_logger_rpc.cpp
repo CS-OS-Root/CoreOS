@@ -141,7 +141,7 @@ mla_bool_t mla_logger_rpc_log_get_messages_handler(mla_rpc_procedure_const_void_
         return false;
     }
 
-    output->entries = mla_array_list<mla_logger_rpc_log_entry_t, mla_logger_rpc_log_entry_initializer>(g_rpc_log_cache.entry_count);
+    output->entries = mla_array_list<mla_init_struct(mla_logger_rpc_log_entry_t)>(g_rpc_log_cache.entry_count);
     mla_size_t index = g_rpc_log_cache.current_index;
 
     for (mla_size_t i = 0; i < g_rpc_log_cache.entry_count; ++i) {

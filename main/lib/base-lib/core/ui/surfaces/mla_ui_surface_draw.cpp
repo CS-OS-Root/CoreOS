@@ -10,7 +10,7 @@ mla_ui_surface_draw_command_polygon_t mla_ui_surface_draw_command_polygon_empty(
 }
 
 mla_ui_surface_draw_command_path_t mla_ui_surface_draw_command_path_empty() {
-    return { mla_array_list_empty<mla_ui_surface_draw_path_command_t, mla_ui_surface_draw_path_command_initializer_t>(), {0,0,0,0}, {0,0,0,0}, 0 };
+    return { mla_array_list_empty<mla_init_struct(mla_ui_surface_draw_path_command_t)>(), {0,0,0,0}, {0,0,0,0}, 0 };
 }
 
 mla_ui_surface_draw_command_text_t mla_ui_surface_draw_command_text_empty() {
@@ -21,7 +21,7 @@ mla_ui_surface_draw_command_t mla_ui_surface_draw_command_empty() {
     return  {MLA_UI_SURFACE_DRAW_COMMAND_KIND_NONE, {{0, 0, 0, 0, 0, 0, {0, 0, 0, 0}, {0, 0, 0, 0}, 0}}, mla_ui_surface_draw_command_text_empty(), mla_ui_surface_draw_command_path_empty(), mla_ui_surface_draw_command_polyline_empty(), mla_ui_surface_draw_command_polygon_empty() };
 }
 
-void mla_ui_surface_draw_commands_scale(mla_array_list_t<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t>& drawCommands, mla_double_t scaleX, mla_double_t scaleY) {
+void mla_ui_surface_draw_commands_scale(mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)>& drawCommands, mla_double_t scaleX, mla_double_t scaleY) {
 
     for (mla_size_t i = 0; i < mla_array_list_size(drawCommands); i++) {
         mla_ui_surface_draw_command_t& command = mla_array_list_get_unsafe(drawCommands, i);

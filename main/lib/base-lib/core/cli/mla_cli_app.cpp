@@ -121,8 +121,7 @@ void mla_private_cli_activate_module(mla_cli_app_t &app, mla_cli_module_t &modul
 }
 
 mla_bool_t mla_private_cli_cmd_exit_execute(const mla_cli_command_t &command,
-                                const mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer,
-                                    mla_string_initializer> &parameters,
+                                const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> &parameters,
                                 const mla_cli_command_execute_outstream_t &out) {
     (void) parameters;
     mla_cli_app_t *app = mla_user_data_get_pointer_data<mla_cli_app_t>(command.user_data, mla_cli_app_user_data_name);
@@ -187,8 +186,7 @@ mla_string_t mla_private_cli_format_command(const mla_cli_command_t &command) {
 }
 
 mla_bool_t mla_private_cli_cmd_help_execute(const mla_cli_command_t &command,
-                                const mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer,
-                                    mla_string_initializer> &parameters,
+                                const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> &parameters,
                                 const mla_cli_command_execute_outstream_t &out) {
     (void) parameters;
     mla_cli_app_t *app = mla_user_data_get_pointer_data<mla_cli_app_t>(command.user_data, mla_cli_app_user_data_name);
@@ -251,8 +249,7 @@ mla_bool_t mla_private_cli_cmd_help_execute(const mla_cli_command_t &command,
 }
 
 mla_bool_t mla_private_cli_cmd_open_sub_module_execute(const mla_cli_command_t &command,
-                                           const mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer,
-                                               mla_string_initializer> &parameters,
+                                           const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> &parameters,
                                            const mla_cli_command_execute_outstream_t &out) {
     (void) parameters;
 
@@ -416,12 +413,12 @@ mla_bool_t mla_private_cli_parser_parse_and_execute_command(mla_cli_app_t &app, 
 
 mla_cli_app_t mla_cli_app_empty() {
     return {
-        mla_array_list_empty<mla_cli_module_t, mla_cli_module_initializer>(),
+        mla_array_list_empty<mla_init_struct(mla_cli_module_t)>(),
         mla_string_empty(), // currentLine
         0,                  // cursorPos
         0,                  // escState
         0,                  // escParam
-        mla_array_list_empty<mla_string_t, mla_string_initializer>(), // history
+        mla_array_list_empty<mla_init_struct(mla_string_t)>(), // history
         -1,                 // historyIndex
         mla_string_empty()  // savedLiveLine
     };
@@ -429,12 +426,12 @@ mla_cli_app_t mla_cli_app_empty() {
 
 mla_cli_app_t mla_cli_app_init(mla_cli_module_t &rootModule, mla_stream_output_t &outputStream) {
     mla_cli_app_t app = {
-        mla_array_list<mla_cli_module_t, mla_cli_module_initializer>(2),
+        mla_array_list<mla_init_struct(mla_cli_module_t)>(2),
         mla_string_empty(), // currentLine
         0,                  // cursorPos
         0,                  // escState
         0,                  // escParam
-        mla_array_list<mla_string_t, mla_string_initializer>(8), // history
+        mla_array_list<mla_init_struct(mla_string_t)>(8), // history
         -1,                 // historyIndex
         mla_string_empty()  // savedLiveLine
     };
@@ -661,7 +658,7 @@ mla_bool_t mla_private_cli_commit_line(mla_cli_app_t &app, mla_stream_output_t &
         mla_array_list_add(app.history, mla_string_copy(line));
 
         // Split the command using the && operator into multiple commands
-        mla_array_list_t<mla_string_t, mla_string_initializer> commands = mla_string_split(line, mla_string_const("&&"));
+        mla_array_list_t<mla_init_struct(mla_string_t)> commands = mla_string_split(line, mla_string_const("&&"));
 
         mla_size_t commandCount = mla_array_list_size(commands);
 
@@ -851,8 +848,8 @@ mla_cli_module_t mla_cli_module(const mla_string_t& name) {
     return {
         name,
         mla_string_empty(),
-        mla_array_list_empty<mla_cli_command_t, mla_cli_command_initializer>(),
-        mla_array_list_empty<mla_cli_module_t, mla_cli_module_initializer>()
+        mla_array_list_empty<mla_init_struct(mla_cli_command_t)>(),
+        mla_array_list_empty<mla_init_struct(mla_cli_module_t)>()
     };
 }
 
@@ -860,8 +857,8 @@ mla_cli_module_t mla_cli_module(const mla_string_t& name, const mla_string_t& de
     return {
         name,
         description,
-        mla_array_list_empty<mla_cli_command_t, mla_cli_command_initializer>(),
-        mla_array_list_empty<mla_cli_module_t, mla_cli_module_initializer>()
+        mla_array_list_empty<mla_init_struct(mla_cli_command_t)>(),
+        mla_array_list_empty<mla_init_struct(mla_cli_module_t)>()
     };
 }
 

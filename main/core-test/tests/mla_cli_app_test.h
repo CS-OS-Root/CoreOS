@@ -14,7 +14,7 @@ static mla_bool_t test_command_executed = false;
 static mla_string_t test_command_output = mla_string_empty();
 
 // Test command execution function
-inline mla_bool_t test_command_execute(const mla_cli_command_t& command, const mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer>& parameters, const mla_cli_command_execute_outstream_t& out) {
+inline mla_bool_t test_command_execute(const mla_cli_command_t& command, const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>& parameters, const mla_cli_command_execute_outstream_t& out) {
     (void)command;
     (void)parameters;
     test_command_executed = true;
@@ -26,7 +26,7 @@ inline mla_bool_t test_command_execute(const mla_cli_command_t& command, const m
 // Variables for count-based execution
 static mla_int32_t test_command_execute_count = 0;
 
-inline mla_bool_t test_command_execute_counter(const mla_cli_command_t& command, const mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer>& parameters, const mla_cli_command_execute_outstream_t& out) {
+inline mla_bool_t test_command_execute_counter(const mla_cli_command_t& command, const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>& parameters, const mla_cli_command_execute_outstream_t& out) {
     (void)command;
     (void)parameters;
     test_command_execute_count++;
@@ -34,7 +34,7 @@ inline mla_bool_t test_command_execute_counter(const mla_cli_command_t& command,
     return true;
 }
 
-inline mla_bool_t test_command_execute_fail(const mla_cli_command_t& command, const mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer>& parameters, const mla_cli_command_execute_outstream_t& out) {
+inline mla_bool_t test_command_execute_fail(const mla_cli_command_t& command, const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>& parameters, const mla_cli_command_execute_outstream_t& out) {
     (void)command;
     (void)parameters;
     test_command_execute_count++;

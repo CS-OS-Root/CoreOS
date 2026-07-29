@@ -73,6 +73,7 @@ if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
             ${SOURCE_FILES}
             ${SOURCE_NETWORK_FILES}
             ${SOURCE_UI_FILES}
+            ${SOURCE_FILE_SYSTEM_FILES}
     )
     add_executable(MLA_C_App_Linux ${SOURCE_FILES_LINUX_APP})
     target_link_libraries(MLA_C_App_Linux PRIVATE ${CMAKE_DL_LIBS})

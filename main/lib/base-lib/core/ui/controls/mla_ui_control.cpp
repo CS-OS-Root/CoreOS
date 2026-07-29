@@ -13,8 +13,9 @@
 mla_ui_control_value_t mla_ui_control_value_empty() {
     return {
         mla_string_empty(),
-        mla_string_empty(),
+        MLA_UI_CONTROL_VALUE_TYPE_INT32,
         {0},
+        mla_string_empty()
     };
 }
 
@@ -26,11 +27,11 @@ mla_ui_control_t mla_ui_control() {
     return {
         mla_generate_runtime_id(),
         {0, 0, 0, 0},
-        mla_array_list_empty<mla_ui_control_t, mla_ui_control_initializer_t>(),
+        mla_array_list_empty<mla_init_struct(mla_ui_control_t)>(),
         nullptr,
         nullptr,
         nullptr,
-        mla_array_list_empty<mla_ui_control_value_t, mla_ui_control_value_initializer_t>(),
+        mla_array_list_empty<mla_init_struct(mla_ui_control_value_t)>(),
     };
 }
 
@@ -38,11 +39,11 @@ mla_ui_control_t mla_ui_control_empty() {
     return {
         mla_string_empty(),
         {0, 0, 0, 0},
-        mla_array_list_empty<mla_ui_control_t, mla_ui_control_initializer_t>(),
+        mla_array_list_empty<mla_init_struct(mla_ui_control_t)>(),
         nullptr,
         nullptr,
         nullptr,
-        mla_array_list_empty<mla_ui_control_value_t, mla_ui_control_value_initializer_t>(),
+        mla_array_list_empty<mla_init_struct(mla_ui_control_value_t)>(),
     };
 }
 
@@ -357,7 +358,7 @@ mla_bool_t mla_ui_control_set_value_as_pointer(mla_ui_control_t &control, const 
     return mla_array_list_add(control.values, newValue);
 }
 
-void mla_ui_control_reset_values(const mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t> &uiControls,
+void mla_ui_control_reset_values(const mla_array_list_t<mla_init_struct(mla_ui_control_t)> &uiControls,
                                  const mla_string_t &name) {
     for (mla_size_t i = 0; i < mla_array_list_size(uiControls); i++) {
         mla_ui_control_t &control = mla_array_list_get_unsafe(uiControls, i);
@@ -382,17 +383,15 @@ mla_bool_t mla_ui_control_add_child(mla_ui_control_t &parent, const mla_ui_contr
 
 mla_bool_t mla_ui_control_render_to_draw_commands(const mla_ui_control_context_t &context,
                                                   const mla_ui_control_t &control,
-                                                  mla_array_list_t<mla_ui_surface_draw_command_t,
-                                                      mla_ui_surface_draw_command_initializer_t> &drawCommands,
-                                                  mla_array_list_t<mla_ui_control_input_area_t,
-                                                      mla_ui_control_input_area_initializer_t> &inputAreas) {
+                                                  mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)> &drawCommands,
+                                                  mla_array_list_t<mla_init_struct(mla_ui_control_input_area_t)> &inputAreas) {
     if (control.renderToDrawCommands != nullptr) {
         return control.renderToDrawCommands(context, control, drawCommands, inputAreas);
     }
     return false;
 }
 
-mla_bool_t mla_ui_controls_render_to_draw_commands(const mla_ui_control_context_t &context, const mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t> &uiControls, mla_array_list_t<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t>& drawCommands, mla_array_list_t<mla_ui_control_input_area_t, mla_ui_control_input_area_initializer_t> &inputAreas) {
+mla_bool_t mla_ui_controls_render_to_draw_commands(const mla_ui_control_context_t &context, const mla_array_list_t<mla_init_struct(mla_ui_control_t)> &uiControls, mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)>& drawCommands, mla_array_list_t<mla_init_struct(mla_ui_control_input_area_t)> &inputAreas) {
 
     mla_size_t controlCount = mla_array_list_size(uiControls);
     for (mla_size_t i = 0; i < controlCount; i++) {
@@ -510,7 +509,7 @@ mla_ui_control_input_area_t mla_ui_control_input_area(const mla_string_t &contro
     };
 }
 
-mla_bool_t mla_ui_control_find_by_id(const mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t> &uiControls,
+mla_bool_t mla_ui_control_find_by_id(const mla_array_list_t<mla_init_struct(mla_ui_control_t)> &uiControls,
                                      const mla_string_t &controlId, mla_ui_control_t* &outControl) {
     for (mla_size_t i = 0; i < mla_array_list_size(uiControls); i++) {
         mla_ui_control_t* control = mla_array_list_get_ref_unsafe(uiControls, i);
@@ -528,7 +527,7 @@ mla_bool_t mla_ui_control_find_by_id(const mla_array_list_t<mla_ui_control_t, ml
     return false;
 }
 
-mla_bool_t mla_ui_control_find_focused_control(const mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t> &uiControls, mla_ui_control_t* &outControl) {
+mla_bool_t mla_ui_control_find_focused_control(const mla_array_list_t<mla_init_struct(mla_ui_control_t)> &uiControls, mla_ui_control_t* &outControl) {
     for (mla_size_t i = 0; i < mla_array_list_size(uiControls); i++) {
         mla_ui_control_t* control = mla_array_list_get_ref_unsafe(uiControls, i);
 
@@ -546,9 +545,9 @@ mla_bool_t mla_ui_control_find_focused_control(const mla_array_list_t<mla_ui_con
 }
 
 void mla_ui_control_process_input_events(
-    mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t> &uiControls,
-    const mla_array_list_t<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t> &inputEvents,
-    const mla_array_list_t<mla_ui_control_input_area_t, mla_ui_control_input_area_initializer_t> &inputAreas,
+    mla_array_list_t<mla_init_struct(mla_ui_control_t)> &uiControls,
+    const mla_array_list_t<mla_init_struct(mla_ui_surface_input_event_t)> &inputEvents,
+    const mla_array_list_t<mla_init_struct(mla_ui_control_input_area_t)> &inputAreas,
     mla_user_data_t& userData) {
 
     mla_size_t inputAreaCount = mla_array_list_size(inputAreas);

@@ -29,7 +29,7 @@ inline void main_app_web_ui_init(const mla_ui_control_surface_process_task_t &pr
     mla_ui_http_server_add_web_surface(g_main_app_web_ui_http_server, mla_string_const("Test UI"), mla_string_const("test"), processTask);
     mla_http_server_start(g_main_app_web_ui_http_server, mla_app_web_ui_http_task_count, mla_app_web_ui_http_task_stack_size);
 
-    mla_array_list_t<mla_network_ip_address_t, mla_network_ip_address_initializer_t> local_ips = mla_network_get_local_ip_addresses();
+    mla_array_list_t<mla_init_struct(mla_network_ip_address_t)> local_ips = mla_network_get_local_ip_addresses();
 
     if (mla_array_list_size(local_ips) == 0) {
         mla_warning("No local IP addresses found. Web UI may not be accessible.");

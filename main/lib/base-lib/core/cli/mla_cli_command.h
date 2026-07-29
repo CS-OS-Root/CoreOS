@@ -28,7 +28,7 @@ struct mla_cli_command_t;
  * @param userData User data attached to the command.
  * @return mla_array_list_t<mla_string_t, mla_string_initializer> Candidate completion strings.
  */
-typedef mla_array_list_t<mla_string_t, mla_string_initializer> (*mla_cli_parameter_value_autocomplete_fn)(
+typedef mla_array_list_t<mla_init_struct(mla_string_t)> (*mla_cli_parameter_value_autocomplete_fn)(
     const mla_cli_command_t &command,
     const mla_string_t &parameterName,
     const mla_string_t &currentValuePrefix,
@@ -49,6 +49,16 @@ struct mla_cli_command_parameter_t {
     mla_bool_t is_flag;
     /** Optional callback for parameter value autocompletion. */
     mla_cli_parameter_value_autocomplete_fn value_autocomplete_fn;
+
+    static mla_cli_command_parameter_t init() {
+        return {
+            mla_string_empty(),
+            mla_string_empty(),
+            false,
+            false,
+            nullptr
+        };
+    }
 };
 
 /**
@@ -93,21 +103,7 @@ inline mla_cli_command_parameter_t mla_cli_command_parameter(const mla_string_t&
     };
 }
 
-/**
- * @struct mla_cli_command_parameter_initializer
- * @brief Framework initializer for mla_cli_command_parameter_t.
- */
-struct mla_cli_command_parameter_initializer {
-    static mla_cli_command_parameter_t init() {
-        return {
-            mla_string_empty(),
-            mla_string_empty(),
-            false,
-            false,
-            nullptr
-        };
-    }
-};
+
 
 /**
  * @brief Helper to set the value autocompletion callback on a CLI command parameter.
@@ -130,11 +126,11 @@ inline void mla_cli_command_parameter_set_value_autocomplete_fn(mla_cli_command_
  * @param prefix Prefix string to filter candidates against.
  * @return mla_array_list_t<mla_string_t, mla_string_initializer> Array list of matching candidate strings.
  */
-inline mla_array_list_t<mla_string_t, mla_string_initializer> mla_cli_parameter_value_autocomplete_filter_candidates(
-    const mla_array_list_t<mla_string_t, mla_string_initializer> &candidates,
+inline mla_array_list_t<mla_init_struct(mla_string_t)> mla_cli_parameter_value_autocomplete_filter_candidates(
+    const mla_array_list_t<mla_init_struct(mla_string_t)> &candidates,
     const mla_string_t &prefix) {
-    mla_array_list_t<mla_string_t, mla_string_initializer> result =
-        mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> result =
+        mla_array_list_empty<mla_init_struct(mla_string_t)>();
 
     for (mla_size_t i = 0; i < mla_array_list_size(candidates); ++i) {
         const mla_string_t *candidate = mla_array_list_get_ref(candidates, i);
@@ -154,14 +150,14 @@ inline mla_array_list_t<mla_string_t, mla_string_initializer> mla_cli_parameter_
  * @param candidates Array of null-terminated C-string pointers.
  * @param count Number of elements in the candidates array.
  * @param prefix Prefix string to filter candidates against.
- * @return mla_array_list_t<mla_string_t, mla_string_initializer> Array list of matching candidate strings.
+ * @return mla_array_list_t<mla_init_struct(mla_string_t)> Array list of matching candidate strings.
  */
-inline mla_array_list_t<mla_string_t, mla_string_initializer> mla_cli_parameter_value_autocomplete_filter_c_strings(
+inline mla_array_list_t<mla_init_struct(mla_string_t)> mla_cli_parameter_value_autocomplete_filter_c_strings(
     const mla_char_t* const* candidates,
     mla_size_t count,
     const mla_string_t &prefix) {
-    mla_array_list_t<mla_string_t, mla_string_initializer> result =
-        mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> result =
+        mla_array_list_empty<mla_init_struct(mla_string_t)>();
 
     for (mla_size_t i = 0; i < count; ++i) {
         if (candidates[i] != nullptr) {
@@ -194,24 +190,21 @@ mla_stream_output_t mla_cli_command_execute_outstream_as_stream_output(const mla
 mla_stream_output_t mla_cli_command_execute_outstream_verbose_as_stream_output(const mla_cli_command_execute_outstream_t &out);
 
 typedef mla_bool_t (*mla_cli_command_execute_t)(const mla_cli_command_t &command,
-                                          const mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t,
-                                              mla_string_initializer, mla_string_initializer> &parameters,
+                                          const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> &parameters,
                                           const mla_cli_command_execute_outstream_t &out);
 
 struct mla_cli_command_t {
     mla_string_t name;
     mla_string_t description;
-    mla_array_list_t<mla_cli_command_parameter_t, mla_cli_command_parameter_initializer> parameters;
+    mla_array_list_t<mla_init_struct(mla_cli_command_parameter_t)> parameters;
     mla_cli_command_execute_t execute;
     mla_user_data_t user_data;
-};
 
-struct mla_cli_command_initializer {
     static mla_cli_command_t init() {
         return {
             mla_string_empty(),
             mla_string_empty(),
-            mla_array_list_empty<mla_cli_command_parameter_t, mla_cli_command_parameter_initializer>(),
+            mla_array_list_empty<mla_init_struct(mla_cli_command_parameter_t)>(),
             nullptr,
             mla_user_data_empty()
         };
@@ -222,8 +215,7 @@ inline mla_cli_command_t mla_cli_command(const mla_string_t &p_Name, const mla_s
     return {
         p_Name,
         p_Description,
-        mla_array_list_empty<mla_cli_command_parameter_t,
-            mla_cli_command_parameter_initializer>(),
+        mla_array_list_empty<mla_init_struct(mla_cli_command_parameter_t)>(),
         p_Execute,
         mla_user_data_empty()
     };
@@ -233,8 +225,7 @@ inline mla_cli_command_t mla_cli_command(const mla_string_t &p_Name, const mla_c
     return {
         p_Name,
         mla_string_empty(),
-        mla_array_list_empty<mla_cli_command_parameter_t,
-            mla_cli_command_parameter_initializer>(),
+        mla_array_list_empty<mla_init_struct(mla_cli_command_parameter_t)>(),
         p_Execute,
         mla_user_data_empty()
     };
@@ -268,8 +259,7 @@ inline void mla_cli_command_add_parameter_verbose_output(mla_cli_command_t &comm
 }
 
 inline mla_string_t mla_cli_command_get_parameter_value(const mla_cli_command_t &command,
-    const mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t,
-        mla_string_initializer, mla_string_initializer> &parameters,
+    const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> &parameters,
     const mla_string_t &parameterName, const mla_string_t &defaultValue = mla_string_empty()) {
 
     (void)command;
@@ -283,8 +273,7 @@ inline mla_string_t mla_cli_command_get_parameter_value(const mla_cli_command_t 
     return out;
 }
 
-inline mla_bool_t mla_cli_command_get_switch_value(const mla_cli_command_t &command, const mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t,
-    mla_string_initializer, mla_string_initializer> &parameters,
+inline mla_bool_t mla_cli_command_get_switch_value(const mla_cli_command_t &command, const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> &parameters,
     const mla_string_t &parameterName, mla_bool_t defaultValue = false) {
 
     mla_string_t value = mla_cli_command_get_parameter_value(command, parameters, parameterName);
@@ -301,8 +290,7 @@ inline mla_bool_t mla_cli_command_get_switch_value(const mla_cli_command_t &comm
 
 }
 
-inline mla_bool_t mla_cli_command_parameter_verbose_output_active(const mla_cli_command_t &command,const mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t,
-    mla_string_initializer, mla_string_initializer> &parameters) {
+inline mla_bool_t mla_cli_command_parameter_verbose_output_active(const mla_cli_command_t &command,const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> &parameters) {
 
     return mla_cli_command_get_switch_value(command, parameters, mla_string(mla_cli_command_verbose_parameter_name));
 }

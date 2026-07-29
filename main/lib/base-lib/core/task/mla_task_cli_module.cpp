@@ -7,8 +7,7 @@
 #include "../cli/mla_cli_command.h"
 
 mla_bool_t mla_private_task_cli_list_all_tasks(const mla_cli_command_t &command,
-                                          const mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t,
-                                              mla_string_initializer, mla_string_initializer> &parameters,
+                                          const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> &parameters,
                                           const mla_cli_command_execute_outstream_t &out) {
 
     (void)command;
@@ -37,8 +36,7 @@ mla_bool_t mla_private_task_cli_list_all_tasks(const mla_cli_command_t &command,
 }
 
 mla_bool_t mla_private_task_cli_kill_task(const mla_cli_command_t &command,
-                                          const mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t,
-                                              mla_string_initializer, mla_string_initializer> &parameters,
+                                          const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> &parameters,
                                           const mla_cli_command_execute_outstream_t &out) {
 
     (void)command;

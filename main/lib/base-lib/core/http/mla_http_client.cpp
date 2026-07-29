@@ -233,7 +233,7 @@ mla_bool_t mla_private_http_client_parse_response_header(mla_stream_input_t & in
     }
 
     // Parse status line
-    mla_array_list_t<mla_string_t, mla_string_initializer> parts = mla_string_split(statusLine, mla_string_const(" "));
+    mla_array_list_t<mla_init_struct(mla_string_t)> parts = mla_string_split(statusLine, mla_string_const(" "));
 
     if (mla_array_list_size(parts) < 2) {
         response.statusCode = 400;

@@ -429,7 +429,7 @@ inline mla_ui_surface_input_states_t mla_private_esp32_surface_get_input_states(
     return mla_ui_surface_input_states_empty();
 }
 
-inline mla_bool_t mla_private_esp32_surface_render_draw_commands(const mla_ui_surface_t& surface, const mla_array_list_t<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t>& drawCommands, mla_array_list_t<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t>& eventsSinceLastFame) {
+inline mla_bool_t mla_private_esp32_surface_render_draw_commands(const mla_ui_surface_t& surface, const mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)>& drawCommands, mla_array_list_t<mla_init_struct(mla_ui_surface_input_event_t)>& eventsSinceLastFame) {
     (void) eventsSinceLastFame;
     mla_esp32_surface_t *esp_surface = (mla_esp32_surface_t *) surface.resource;
     if (!esp_surface)

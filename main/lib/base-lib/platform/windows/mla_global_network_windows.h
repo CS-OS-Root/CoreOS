@@ -465,8 +465,8 @@ mla_bool_t mla_private_windows_bind_and_listen_secure(
 }
 
 
-mla_array_list_t<mla_network_ip_address_t, mla_network_ip_address_initializer_t> mla_private_windows_get_local_ip_addresses() {
-    mla_array_list_t<mla_network_ip_address_t, mla_network_ip_address_initializer_t> ipAddresses = mla_array_list_empty<mla_network_ip_address_t, mla_network_ip_address_initializer_t>();
+mla_array_list_t<mla_init_struct(mla_network_ip_address_t)> mla_private_windows_get_local_ip_addresses() {
+    mla_array_list_t<mla_init_struct(mla_network_ip_address_t)> ipAddresses = mla_array_list_empty<mla_init_struct(mla_network_ip_address_t)>();
 
     ULONG bufferSize = 15000;
     IP_ADAPTER_ADDRESSES* adapterAddresses = nullptr;

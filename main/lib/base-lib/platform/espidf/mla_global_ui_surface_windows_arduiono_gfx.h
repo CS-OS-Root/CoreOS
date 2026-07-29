@@ -56,9 +56,7 @@ struct mla_arduino_gfx_font_cache_item {
     mla_ui_surface_font_type_t font_type;
     const GFXfont *gfx_font;
     mla_uint8_t font_size_index;
-};
 
-struct mla_arduino_gfx_font_cache_item_initializer {
     static mla_arduino_gfx_font_cache_item init() {
         return {
             mla_ui_surface_font_type_empty(),
@@ -70,16 +68,14 @@ struct mla_arduino_gfx_font_cache_item_initializer {
 
 // Render cache structure
 struct mla_arduino_gfx_render_cache {
-    mla_array_list_t<mla_arduino_gfx_font_cache_item,
-        mla_arduino_gfx_font_cache_item_initializer> fontCache;
+    mla_array_list_t<mla_init_struct(mla_arduino_gfx_font_cache_item)> fontCache;
     mla_uint16_t currentFillColor;
     mla_uint16_t currentStrokeColor;
 };
 
 mla_arduino_gfx_render_cache mla_private_arduino_gfx_cache_empty() {
     return {
-        mla_array_list_empty<mla_arduino_gfx_font_cache_item,
-            mla_arduino_gfx_font_cache_item_initializer>(),
+        mla_array_list_empty<mla_init_struct(mla_arduino_gfx_font_cache_item)>(),
         0x0000,
         0x0000
     };
@@ -335,10 +331,8 @@ static void mla_private_arduino_gfx_draw_rounded_rect(mla_int32_t x, mla_int32_t
 }
 
 mla_bool_t mla_private_arduino_gfx_surface_render_draw_commands(const mla_ui_surface_t &surface,
-                                                       const mla_array_list_t<mla_ui_surface_draw_command_t,
-                                                           mla_ui_surface_draw_command_initializer_t> &drawCommands,
-                                                       mla_array_list_t<mla_ui_surface_input_event_t,
-                                                           mla_ui_surface_input_event_initializer_t> &eventsSinceLastFrame) {
+                                                       const mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)> &drawCommands,
+                                                       mla_array_list_t<mla_init_struct(mla_ui_surface_input_event_t)> &eventsSinceLastFrame) {
     mla_arduino_gfx_surface_t *gfx_surface = mla_s_cast<mla_arduino_gfx_surface_t *>(surface.resource);
 
     if (gfx_surface == nullptr) {

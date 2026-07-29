@@ -63,8 +63,8 @@ mla_bool_t mla_private_pico_bind_and_listen_secure(
     return false;
 }
 
-mla_array_list_t<mla_network_ip_address_t, mla_network_ip_address_initializer_t> mla_private_pico_get_local_ip_addresses() {
-    return mla_array_list_empty<mla_network_ip_address_t, mla_network_ip_address_initializer_t>();
+mla_array_list_t<mla_init_struct(mla_network_ip_address_t)> mla_private_pico_get_local_ip_addresses() {
+    return mla_array_list_empty<mla_init_struct(mla_network_ip_address_t)>();
 }
 
 mla_network_low_level_operations_t g_network_low_level_operations = {

@@ -16,6 +16,10 @@ struct mla_reflection_rpc_struct_metadata_field_t {
     mla_reflection_type_t element_type; // For lists
     mla_string_t struct_name;
 
+    static mla_reflection_rpc_struct_metadata_field_t init() {
+        return { mla_string_empty(), MLA_REFLECTION_TYPE_INVALID, MLA_REFLECTION_TYPE_INVALID, mla_string_empty() };
+    }
+
     static mla_bool_t serialize(mla_serializer_t& serializer, const mla_pointer_t& obj) {
 
         const mla_reflection_rpc_struct_metadata_field_t* field = mla_pointer_get_data<const mla_reflection_rpc_struct_metadata_field_t>(obj);
@@ -65,11 +69,13 @@ struct mla_reflection_rpc_struct_metadata_field_t {
     }
 };
 
-struct mla_reflection_rpc_struct_metadata_field_initializer;
-
 struct mla_reflection_rpc_struct_metadata_t {
     mla_string_t name;
-    mla_array_list_t<mla_reflection_rpc_struct_metadata_field_t, mla_reflection_rpc_struct_metadata_field_initializer> fields;
+    mla_array_list_t<mla_init_struct(mla_reflection_rpc_struct_metadata_field_t)> fields;
+
+    static mla_reflection_rpc_struct_metadata_t init() {
+        return { mla_string_empty(), mla_array_list_empty<mla_init_struct(mla_reflection_rpc_struct_metadata_field_t)>() };
+    }
 
     static mla_bool_t serialize(mla_serializer_t& serializer, const mla_pointer_t& obj) {
 
@@ -113,19 +119,7 @@ struct mla_reflection_rpc_struct_metadata_t {
     }
 };
 
-struct mla_reflection_rpc_struct_metadata_field_initializer {
-    static mla_reflection_rpc_struct_metadata_field_t init() {
-        return { mla_string_empty(), MLA_REFLECTION_TYPE_INVALID, MLA_REFLECTION_TYPE_INVALID, mla_string_empty() };
-    }
-};
-
 mla_reflection_rpc_struct_metadata_t mla_reflection_rpc_struct_metadata_invalid();
-
-struct mla_reflection_rpc_struct_metadata_initializer {
-    static mla_reflection_rpc_struct_metadata_t init() {
-        return mla_reflection_rpc_struct_metadata_invalid();
-    }
-};
 
 struct mla_reflection_struct_metadata_request_t {
     mla_string_t struct_name;

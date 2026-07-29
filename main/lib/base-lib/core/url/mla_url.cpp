@@ -19,7 +19,7 @@ mla_url_t mla_url_empty() {
         mla_string_empty(),
         0,
         mla_string_empty(),
-        mla_array_list_empty<mla_url_query_param_t, mla_url_query_param_initializer>(),
+        mla_array_list_empty<mla_init_struct(mla_url_query_param_t)>(),
         mla_string_empty()
     };
 }

@@ -8,17 +8,16 @@
 
 mla_cli_parser_t mla_cli_parser() {
     return {
-        mla_array_list<mla_cli_command_t, mla_cli_command_initializer>()
+        mla_array_list<mla_init_struct(mla_cli_command_t)>()
     };
 }
 
 mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const mla_string_t &command) {
     mla_cli_parser_result result = {
         false,
-        mla_cli_command_initializer::init(),
-        mla_hash_map_empty<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer,
-            mla_string_initializer>(),
-        mla_array_list_empty<mla_string_t, mla_string_initializer>()
+        mla_cli_command_t::init(),
+        mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>(),
+        mla_array_list_empty<mla_init_struct(mla_string_t)>()
     };
 
     // We will parse the command char by char with following rules
@@ -235,7 +234,7 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
         }
 
         if (matchingParam != nullptr && matchingParam->value_autocomplete_fn != nullptr) {
-            mla_array_list_t<mla_string_t, mla_string_initializer> rawCompletions =
+            mla_array_list_t<mla_init_struct(mla_string_t)> rawCompletions =
                 matchingParam->value_autocomplete_fn(result.matchingCommand, activeParamForValueAutocomplete,
                     activeParamValuePrefix, result.matchingCommand.user_data);
 

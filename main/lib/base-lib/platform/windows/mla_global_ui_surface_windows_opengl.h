@@ -66,9 +66,7 @@ struct mla_global_ui_surface_windows_opengl_font_cache_item {
     mla_ui_surface_font_type_t font_type;
     mla_buffer_reference_t fontOwner;
     mla_opengl_font_resources* resources;
-};
 
-struct mla_global_ui_surface_windows_opengl_font_cache_item_initializer {
     static mla_global_ui_surface_windows_opengl_font_cache_item init() {
         return {
             mla_ui_surface_font_type_empty(),
@@ -81,7 +79,7 @@ struct mla_global_ui_surface_windows_opengl_font_cache_item_initializer {
 // Render cache structure for performance optimization
 struct mla_global_ui_surface_windows_opengl_Cache {
     // Font cache
-    mla_array_list_t<mla_global_ui_surface_windows_opengl_font_cache_item, mla_global_ui_surface_windows_opengl_font_cache_item_initializer> fontCache;
+    mla_array_list_t<mla_init_struct(mla_global_ui_surface_windows_opengl_font_cache_item)> fontCache;
     
     // Current rendering state
     GLfloat currentColor[4];
@@ -92,7 +90,7 @@ struct mla_global_ui_surface_windows_opengl_Cache {
 
 mla_global_ui_surface_windows_opengl_Cache mla_private_global_ui_surface_windows_opengl_cache_empty() {
     return {
-        mla_array_list_empty<mla_global_ui_surface_windows_opengl_font_cache_item, mla_global_ui_surface_windows_opengl_font_cache_item_initializer>(),
+        mla_array_list_empty<mla_init_struct(mla_global_ui_surface_windows_opengl_font_cache_item)>(),
         {1.0f, 1.0f, 1.0f, 1.0f},
         mla_private_opengl_gradient_state_empty()
     };
@@ -814,10 +812,8 @@ mla_ui_surface_draw_size_t mla_private_windows_surface_opengl_calc_text_size(con
 }
 
 mla_bool_t mla_private_windows_surface_opengl_render_draw_commands(const mla_ui_surface_t &surface,
-                                                         const mla_array_list_t<mla_ui_surface_draw_command_t,
-                                                             mla_ui_surface_draw_command_initializer_t> &drawCommands,
-                                                         mla_array_list_t<mla_ui_surface_input_event_t,
-                                                             mla_ui_surface_input_event_initializer_t> &eventsSinceLastFame) {
+                                                         const mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)> &drawCommands,
+                                                         mla_array_list_t<mla_init_struct(mla_ui_surface_input_event_t)> &eventsSinceLastFame) {
     mla_windows_window_surface_opengl_t *window_surface = mla_s_cast<mla_windows_window_surface_opengl_t *>(surface.resource);
     if (window_surface == nullptr) {
         return false;

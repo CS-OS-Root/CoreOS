@@ -11,23 +11,20 @@
 struct mla_url_query_param_t {
     mla_string_t key;
     mla_string_t value;
+
+    static mla_url_query_param_t init() {
+        return { mla_string_empty(), mla_string_empty() };
+    }
 };
 
 mla_url_query_param_t mla_url_query_param_empty();
-
-struct mla_url_query_param_initializer {
-
-    static mla_url_query_param_t init() {
-        return mla_url_query_param_empty();
-    }
-};
 
 struct mla_url_t {
     mla_string_t scheme; // e.g., "http", "https"
     mla_string_t host;   // e.g., "www.example.com"
     mla_uint16_t port;   // e.g., 80, 443
     mla_string_t path;   // e.g., "/path/to/resource"
-    mla_array_list_t<mla_url_query_param_t, mla_url_query_param_initializer> query;  // e.g., "key1=value1&key2=value2"
+    mla_array_list_t<mla_init_struct(mla_url_query_param_t)> query;  // e.g., "key1=value1&key2=value2"
     mla_string_t fragment; // e.g., "section1"
 };
 

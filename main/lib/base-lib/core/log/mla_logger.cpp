@@ -7,7 +7,7 @@
 // Global Log Manager
 
 mla_logger_manager_t g_logger_manager = {
-    mla_array_list_empty<mla_logger_t, mla_logger_initializer>()
+    mla_array_list_empty<mla_init_struct(mla_logger_t)>()
 };
 
 mla_int32_t mla_log_indexOf_logger(const mla_string_t& loggerName) {

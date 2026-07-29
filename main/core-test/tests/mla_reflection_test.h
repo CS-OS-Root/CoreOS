@@ -44,7 +44,7 @@ struct test_nested_struct_t {
 struct test_list_struct_t {
 
     mla_array_list_t<mla_int32_t> int_list;
-    mla_array_list_t<mla_string_t, mla_string_initializer> string_list;
+    mla_array_list_t<mla_init_struct(mla_string_t)> string_list;
 
     static mla_reflection_struct_metadata_t metadata() {
         mla_reflection_struct_metadata_t meta = mla_reflection_struct_metadata(test_list_struct_t);

@@ -18,7 +18,7 @@ mla_bool_t mla_http_utils_parse_http_version(const mla_string_t &versionStr, mla
 
 }
 
-mla_bool_t mla_http_utils_read_headers(mla_array_list_t<mla_http_header_t, mla_http_header_initializer> &headers, mla_stream_input_t & connection, mla_size_t timeout_ms) {
+mla_bool_t mla_http_utils_read_headers(mla_array_list_t<mla_init_struct(mla_http_header_t)> &headers, mla_stream_input_t & connection, mla_size_t timeout_ms) {
 
     mla_string_t doublePoint = mla_string_const(":");
 
@@ -49,7 +49,7 @@ mla_bool_t mla_http_utils_read_headers(mla_array_list_t<mla_http_header_t, mla_h
     return true;
 }
 
-mla_bool_t mla_http_utils_write_headers(const mla_array_list_t<mla_http_header_t, mla_http_header_initializer> &headers, mla_stream_output_t & connection) {
+mla_bool_t mla_http_utils_write_headers(const mla_array_list_t<mla_init_struct(mla_http_header_t)> &headers, mla_stream_output_t & connection) {
 
     for (mla_size_t i = 0; i < mla_array_list_size(headers); i++) {
 
@@ -195,7 +195,7 @@ mla_stream_input_t mla_http_content_fixed_size_input_stream( mla_stream_input_t 
 
 }
 
-mla_bool_t mla_http_utils_write_content_headers(const mla_array_list_t<mla_http_header_t, mla_http_header_initializer> &headers, mla_stream_input_t& content, mla_stream_output_t & connection) {
+mla_bool_t mla_http_utils_write_content_headers(const mla_array_list_t<mla_init_struct(mla_http_header_t)> &headers, mla_stream_input_t& content, mla_stream_output_t & connection) {
 
     // Check if Content-Length header is set for body
     mla_string_t contentLengthStr = mla_http_headers_get_value(headers, mla_string_const("Content-Length"));

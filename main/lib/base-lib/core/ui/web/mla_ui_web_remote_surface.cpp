@@ -42,22 +42,20 @@ struct mla_ui_web_remote_surface_client_text_size_t {
         } else {
             return MLA_DESERIALIZER_READ_SKIPPED;
         }
+        return MLA_DESERIALIZER_READ_HANDLED;
     }
-};
-
-struct mla_ui_web_remote_surface_client_text_size_initializer {
 
     static mla_ui_web_remote_surface_client_text_size_t init() {
-        return  {mla_ui_surface_font_type_empty(), {}};
+        return { mla_ui_surface_font_type_empty(), {} };
     }
 };
 
 struct mla_ui_web_remote_surface_client_message_t {
 
     mla_ui_surface_size_t surface_size;
-    mla_array_list_t<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t> inputEvents;
+    mla_array_list_t<mla_init_struct(mla_ui_surface_input_event_t)> inputEvents;
     mla_ui_surface_input_states_t inputStates;
-    mla_array_list_t<mla_ui_web_remote_surface_client_text_size_t, mla_ui_web_remote_surface_client_text_size_initializer> textSize;
+    mla_array_list_t<mla_init_struct(mla_ui_web_remote_surface_client_text_size_t)> textSize;
 
 
     static mla_bool_t serialize(mla_serializer_t& serializer, const mla_pointer_t& obj) {
@@ -99,18 +97,17 @@ struct mla_ui_web_remote_surface_client_message_t {
 mla_ui_web_remote_surface_client_message_t mla_ui_web_remote_surface_client_message_empty() {
     return {
         {0, 0},
-        mla_array_list_empty<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t>(),
+        mla_array_list_empty<mla_init_struct(mla_ui_surface_input_event_t)>(),
         mla_ui_surface_input_states_empty(),
-        mla_array_list_empty<mla_ui_web_remote_surface_client_text_size_t, mla_ui_web_remote_surface_client_text_size_initializer>()
+        mla_array_list_empty<mla_init_struct(mla_ui_web_remote_surface_client_text_size_t)>()
     };
 }
-
 
 struct mla_ui_web_remote_surface_data_t {
     mla_string_t connectionId; // We can not store the connection pointer directly in the surface resource because it may become invalid if the connection is closed. Instead, we can store the connection ID and look up the connection when needed.
     mla_http_server_t *server; // We need a reference to the server to look up the connection
     mla_ui_surface_size_t lastSurfaceSize; // We can store the last surface size to detect when it changes, since we can't rely on the client to tell us when it changes
-    mla_array_list_t<mla_ui_web_remote_surface_client_text_size_t, mla_ui_web_remote_surface_client_text_size_initializer> textSizeCache; // We can cache the text sizes for different font types to avoid recalculating them every frame
+    mla_array_list_t<mla_init_struct(mla_ui_web_remote_surface_client_text_size_t)> textSizeCache; // We can cache the text sizes for different font types to avoid recalculating them every frame
     mla_ui_surface_input_states_t lastInputStates;
 
     static mla_ui_web_remote_surface_data_t init() {
@@ -118,14 +115,14 @@ struct mla_ui_web_remote_surface_data_t {
             mla_string_empty(),
             nullptr,
             {0, 0},
-            mla_array_list_empty<mla_ui_web_remote_surface_client_text_size_t, mla_ui_web_remote_surface_client_text_size_initializer>(),
+            mla_array_list_empty<mla_init_struct(mla_ui_web_remote_surface_client_text_size_t)>(),
             mla_ui_surface_input_states_empty()
         };
     }
 };
 
 struct mla_ui_web_remote_surface_server_message_t {
-    const mla_array_list_t<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t>& drawCommands;
+    const mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)>& drawCommands;
     mla_uint64_t timestamp;
 
     static mla_bool_t serialize(mla_serializer_t& serializer, const mla_pointer_t& obj) {
@@ -168,7 +165,7 @@ mla_user_data_id_init(mla_ui_web_remote_surface_timestamp_user_data_name)
 
 mla_bool_t mla_private_ui_web_remote_surface_render_draw_commands_text_message_generator(mla_stream_output_t& output, mla_user_data_t& user_data) {
 
-    mla_array_list_t<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t>* drawCommands = mla_user_data_get_pointer_data<mla_array_list_t<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t>>(user_data, mla_ui_web_remote_surface_draw_commands_message_user_data_name);
+    mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)>* drawCommands = mla_user_data_get_pointer_data<mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)>>(user_data, mla_ui_web_remote_surface_draw_commands_message_user_data_name);
     mla_uint64_t timestamp = mla_user_data_get_uint64(user_data, mla_ui_web_remote_surface_timestamp_user_data_name);
 
     if (drawCommands == nullptr) {
@@ -186,7 +183,7 @@ mla_bool_t mla_private_ui_web_remote_surface_render_draw_commands_text_message_g
 
 }
 
-mla_bool_t mla_private_ui_web_remote_surface_render_draw_commands(const mla_ui_surface_t& surface, const mla_array_list_t<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t>& drawCommands, mla_array_list_t<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t>& eventsSinceLastFame, mla_uint64_t timeSinceLastFrameMs) {
+mla_bool_t mla_private_ui_web_remote_surface_render_draw_commands(const mla_ui_surface_t& surface, const mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)>& drawCommands, mla_array_list_t<mla_init_struct(mla_ui_surface_input_event_t)>& eventsSinceLastFame, mla_uint64_t timeSinceLastFrameMs) {
 
     (void)eventsSinceLastFame;
 
@@ -278,7 +275,7 @@ mla_ui_web_remote_surface_t mla_ui_web_remote_surface_invalid() {
 }
 
 mla_ui_web_remote_surface_message_result_t mla_ui_web_remote_surface_message_result_no_successful() {
-    return {false, mla_array_list_empty<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t>()};
+    return {false, mla_array_list_empty<mla_init_struct(mla_ui_surface_input_event_t)>()};
 }
 
 
@@ -348,7 +345,7 @@ mla_ui_web_remote_surface_t mla_ui_web_remote_surface_create(const mla_http_serv
         1080
     };
     surfaceData->lastInputStates = mla_ui_surface_input_states_empty();
-    surfaceData->textSizeCache = mla_array_list_empty<mla_ui_web_remote_surface_client_text_size_t, mla_ui_web_remote_surface_client_text_size_initializer>();
+    surfaceData->textSizeCache = mla_array_list_empty<mla_init_struct(mla_ui_web_remote_surface_client_text_size_t)>();
 
     return {
         {

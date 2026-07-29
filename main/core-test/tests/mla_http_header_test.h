@@ -12,7 +12,7 @@
 // Adds a single header and verifies retrieval via value and values API.
 void HttpHeader_AddSingleTest() {
 
-    auto headers = mla_array_list<mla_http_header_t, mla_http_header_initializer>();
+    auto headers = mla_array_list<mla_init_struct(mla_http_header_t)>();
 
     mla_http_headers_add(headers, mla_string_const("Content-Type"), mla_string_const("text/plain"));
 
@@ -35,7 +35,7 @@ void HttpHeader_AddSingleTest() {
 // Adds a header twice and verifies it becomes multi-value and preserves both values.
 void HttpHeader_DuplicateBecomesMultiTest() {
 
-    auto headers = mla_array_list<mla_http_header_t, mla_http_header_initializer>();
+    auto headers = mla_array_list<mla_init_struct(mla_http_header_t)>();
 
     mla_http_headers_add(headers, mla_string_const("Set-Cookie"), mla_string_const("a=1"));
     mla_http_headers_add(headers, mla_string_const("Set-Cookie"), mla_string_const("b=2"));
@@ -64,7 +64,7 @@ void HttpHeader_DuplicateBecomesMultiTest() {
 // Verifies case-insensitive matching for header names.
 void HttpHeader_CaseInsensitiveNameTest() {
 
-    auto headers = mla_array_list<mla_http_header_t, mla_http_header_initializer>();
+    auto headers = mla_array_list<mla_init_struct(mla_http_header_t)>();
 
     mla_http_headers_add(headers, mla_string_const("content-type"), mla_string_const("text/plain"));
     mla_http_headers_add(headers, mla_string_const("Content-Type"), mla_string_const("application/json"));
@@ -91,7 +91,7 @@ void HttpHeader_CaseInsensitiveNameTest() {
 // Verifies get\_value and get\_values for a missing header.
 void HttpHeader_MissingHeaderLookupTest() {
 
-    auto headers = mla_array_list<mla_http_header_t, mla_http_header_initializer>();
+    auto headers = mla_array_list<mla_init_struct(mla_http_header_t)>();
 
     mla_string_t v = mla_http_headers_get_value(headers, mla_string_const("X-Missing"));
     assert_true(mla_string_equals(v, mla_string_empty()), "get_value(missing)==empty");
@@ -103,7 +103,7 @@ void HttpHeader_MissingHeaderLookupTest() {
 // Verifies values maintain insertion order for multi-value headers.
 void HttpHeader_PreserveInsertionOrderTest() {
 
-    auto headers = mla_array_list<mla_http_header_t, mla_http_header_initializer>();
+    auto headers = mla_array_list<mla_init_struct(mla_http_header_t)>();
 
     mla_http_headers_add(headers, mla_string_const("X-Order"), mla_string_const("v1"));
     mla_http_headers_add(headers, mla_string_const("X-Order"), mla_string_const("v2"));
@@ -123,7 +123,7 @@ void HttpHeader_PreserveInsertionOrderTest() {
 // Verifies get\_values on a single-value header returns a one-element list.
 void HttpHeader_GetValuesFromSingleTest() {
 
-    auto headers = mla_array_list<mla_http_header_t, mla_http_header_initializer>();
+    auto headers = mla_array_list<mla_init_struct(mla_http_header_t)>();
 
     mla_http_headers_add(headers, mla_string_const("Server"), mla_string_const("core"));
     auto vs = mla_http_headers_get_values(headers, mla_string_const("Server"));
@@ -140,7 +140,7 @@ void HttpHeader_GetValuesFromSingleTest() {
 void HttpHeader_HasValueMultiTest() {
 
 
-    auto headers = mla_array_list<mla_http_header_t, mla_http_header_initializer>();
+    auto headers = mla_array_list<mla_init_struct(mla_http_header_t)>();
 
     mla_http_headers_add(headers, mla_string_const("X-Order"), mla_string_const("v1"));
     mla_http_headers_add(headers, mla_string_const("X-Order"), mla_string_const("v2"));
@@ -153,7 +153,7 @@ void HttpHeader_HasValueMultiTest() {
 
 void HttpHeader_HasValueSingleTest() {
 
-    auto headers = mla_array_list<mla_http_header_t, mla_http_header_initializer>();
+    auto headers = mla_array_list<mla_init_struct(mla_http_header_t)>();
 
     mla_http_headers_add(headers, mla_string_const("X-Order"), mla_string_const("v1"));
 

@@ -23,13 +23,13 @@ mla_user_data_id_init(mla_xml_serializer_state_user_data_name)
 struct mla_xml_serializer_state_t {
     mla_bool_t in_open_tag;
     mla_string_t pending_property_name;
-    mla_array_list_t<mla_string_t, mla_string_initializer> tag_stack; // Stack to track tag names
+    mla_array_list_t<mla_init_struct(mla_string_t)> tag_stack; // Stack to track tag names
 
     static mla_xml_serializer_state_t init() {
         return {
             false,
             mla_string_empty(),
-            mla_array_list_empty<mla_string_t, mla_string_initializer>()
+            mla_array_list_empty<mla_init_struct(mla_string_t)>()
         };
     }
 };
@@ -683,7 +683,7 @@ mla_serializer_t mla_xml_serializer(const mla_stream_output_t &output) {
     mla_memset(state, 0, sizeof(mla_xml_serializer_state_t));
     state->in_open_tag = false;
     state->pending_property_name = mla_string_empty();
-    state->tag_stack = mla_array_list<mla_string_t, mla_string_initializer>();
+    state->tag_stack = mla_array_list<mla_init_struct(mla_string_t)>();
 
     mla_user_data_t user_data = mla_user_data_empty();
     mla_user_data_set_pointer(user_data, mla_xml_serializer_state_user_data_name, state_ptr);

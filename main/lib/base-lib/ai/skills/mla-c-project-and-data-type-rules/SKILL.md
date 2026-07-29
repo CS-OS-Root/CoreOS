@@ -241,9 +241,9 @@ struct mla_example_t {
 };
 ```
 
-For template containers (such as `mla_array_list_t<T, TInit>`), `T` itself can be passed as `TInit` when `T` defines `static T init()` directly on its struct body:
+For template containers (such as `mla_array_list_t<mla_init_struct(T)>`), use `mla_init_struct(T)` when `T` defines `static T init()` directly on its struct body, or `mla_init_data(T)` for primitives/PODs:
 ```cpp
-mla_array_list_t<mla_example_t, mla_example_t> my_list;
+mla_array_list_t<mla_init_struct(mla_example_t)> my_list;
 ```
 
 ### 5. Helper Macros and Templates

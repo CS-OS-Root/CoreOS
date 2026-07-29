@@ -10,12 +10,12 @@ mla_http_header_t mla_http_header_empty() {
     return {
         mla_string_empty(),
         MLA_HTTP_HEADER_TYPE_SINGLE,
-        mla_array_list_empty<mla_string_t, mla_string_initializer>(),
+        mla_array_list_empty<mla_init_struct(mla_string_t)>(),
         mla_string_empty()
     };
 }
 
-void mla_http_headers_add(mla_array_list_t<mla_http_header_t, mla_http_header_initializer> &p_Headers, const mla_string_t &p_Name, const mla_string_t &p_Value, const mla_string_t &value_seperator) {
+void mla_http_headers_add(mla_array_list_t<mla_init_struct(mla_http_header_t)> &p_Headers, const mla_string_t &p_Name, const mla_string_t &p_Value, const mla_string_t &value_seperator) {
 
     // Check if header already exists
     for (mla_size_t i = 0; i < mla_array_list_size(p_Headers); i++) {
@@ -34,14 +34,14 @@ void mla_http_headers_add(mla_array_list_t<mla_http_header_t, mla_http_header_in
     mla_http_header_t new_header = {
         p_Name,
         MLA_HTTP_HEADER_TYPE_SINGLE,
-        mla_array_list_empty<mla_string_t, mla_string_initializer>(),
+        mla_array_list_empty<mla_init_struct(mla_string_t)>(),
         p_Value,
 
     };
 
     mla_array_list_add(p_Headers, new_header);}
 
-void mla_http_headers_add(mla_array_list_t<mla_http_header_t, mla_http_header_initializer> &p_Headers, const mla_string_t &p_Name, const mla_string_t &p_Value) {
+void mla_http_headers_add(mla_array_list_t<mla_init_struct(mla_http_header_t)> &p_Headers, const mla_string_t &p_Name, const mla_string_t &p_Value) {
 
     // Check if header already exists
     for (mla_size_t i = 0; i < mla_array_list_size(p_Headers); i++) {
@@ -56,7 +56,7 @@ void mla_http_headers_add(mla_array_list_t<mla_http_header_t, mla_http_header_in
                 mla_string_t existing_value = header->value;
                 header->value = mla_string_empty();
                 header->type = MLA_HTTP_HEADER_TYPE_MULTI;
-                header->values = mla_array_list<mla_string_t, mla_string_initializer>();
+                header->values = mla_array_list<mla_init_struct(mla_string_t)>();
                 mla_array_list_add(header->values, existing_value);
             }
 
@@ -70,7 +70,7 @@ void mla_http_headers_add(mla_array_list_t<mla_http_header_t, mla_http_header_in
     mla_http_header_t new_header = {
         p_Name,
         MLA_HTTP_HEADER_TYPE_SINGLE,
-        mla_array_list_empty<mla_string_t, mla_string_initializer>(),
+        mla_array_list_empty<mla_init_struct(mla_string_t)>(),
         p_Value,
 
     };
@@ -78,7 +78,7 @@ void mla_http_headers_add(mla_array_list_t<mla_http_header_t, mla_http_header_in
     mla_array_list_add(p_Headers, new_header);
 }
 
-mla_string_t mla_http_headers_get_value(const mla_array_list_t<mla_http_header_t, mla_http_header_initializer> &p_Headers, const mla_string_t &p_Name) {
+mla_string_t mla_http_headers_get_value(const mla_array_list_t<mla_init_struct(mla_http_header_t)> &p_Headers, const mla_string_t &p_Name) {
 
     // Check if header already exists
     for (mla_size_t i = 0; i < mla_array_list_size(p_Headers); i++) {
@@ -104,7 +104,7 @@ mla_string_t mla_http_headers_get_value(const mla_array_list_t<mla_http_header_t
 
 }
 
-mla_array_list_t<mla_string_t, mla_string_initializer> mla_http_headers_get_values(const mla_array_list_t<mla_http_header_t, mla_http_header_initializer> &p_Headers, const mla_string_t &p_Name) {
+mla_array_list_t<mla_init_struct(mla_string_t)> mla_http_headers_get_values(const mla_array_list_t<mla_init_struct(mla_http_header_t)> &p_Headers, const mla_string_t &p_Name) {
 
     // Check if header already exists
     for (mla_size_t i = 0; i < mla_array_list_size(p_Headers); i++) {
@@ -115,7 +115,7 @@ mla_array_list_t<mla_string_t, mla_string_initializer> mla_http_headers_get_valu
 
             // Header exists, return values
             if (header->type == MLA_HTTP_HEADER_TYPE_SINGLE) {
-                mla_array_list_t<mla_string_t, mla_string_initializer> values = mla_array_list<mla_string_t, mla_string_initializer>(1);
+                mla_array_list_t<mla_init_struct(mla_string_t)> values = mla_array_list<mla_init_struct(mla_string_t)>(1);
                 mla_array_list_add(values, header->value);
                 return values;
             }
@@ -125,10 +125,10 @@ mla_array_list_t<mla_string_t, mla_string_initializer> mla_http_headers_get_valu
         }
     }
 
-    return mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    return mla_array_list_empty<mla_init_struct(mla_string_t)>();
 }
 
-mla_bool_t mla_http_headers_has_header_value(const mla_array_list_t<mla_http_header_t, mla_http_header_initializer> &p_Headers, const mla_string_t &p_Name, const mla_string_t &p_Value) {
+mla_bool_t mla_http_headers_has_header_value(const mla_array_list_t<mla_init_struct(mla_http_header_t)> &p_Headers, const mla_string_t &p_Name, const mla_string_t &p_Value) {
 
     for (mla_size_t i = 0; i < mla_array_list_size(p_Headers); i++) {
         mla_http_header_t* header = mla_array_list_get_ref(p_Headers, i);
@@ -159,7 +159,7 @@ mla_bool_t mla_http_headers_has_header_value(const mla_array_list_t<mla_http_hea
 mla_bool_t mla_private_http_headers_has_value(const mla_string_t &headerValue, const mla_string_t &valueToCheck, const mla_string_t &value_seperator) {
 
     // split the value by the seperator
-    mla_array_list_t<mla_string_t, mla_string_initializer> splittedValues = mla_string_split(headerValue, value_seperator);
+    mla_array_list_t<mla_init_struct(mla_string_t)> splittedValues = mla_string_split(headerValue, value_seperator);
 
     for (mla_size_t i = 0; i < mla_array_list_size(splittedValues); i++) {
 
@@ -181,7 +181,7 @@ mla_bool_t mla_private_http_headers_has_value(const mla_string_t &headerValue, c
     return false;
 }
 
-mla_bool_t mla_http_headers_has_header_value(const mla_array_list_t<mla_http_header_t, mla_http_header_initializer> &p_Headers, const mla_string_t &p_Name, const mla_string_t &p_Value, const mla_string_t &value_seperator) {
+mla_bool_t mla_http_headers_has_header_value(const mla_array_list_t<mla_init_struct(mla_http_header_t)> &p_Headers, const mla_string_t &p_Name, const mla_string_t &p_Value, const mla_string_t &value_seperator) {
 
 
     for (mla_size_t i = 0; i < mla_array_list_size(p_Headers); i++) {

@@ -48,9 +48,9 @@ static mla_bool_t mock_bind_and_listen(mla_network_listener_t &listener, const m
 }
 
 static mla_bool_t mock_get_local_ip_addresses_called = false;
-static mla_array_list_t<mla_network_ip_address_t, mla_network_ip_address_initializer_t> mock_local_ips = mla_array_list_empty<mla_network_ip_address_t, mla_network_ip_address_initializer_t>();
+static mla_array_list_t<mla_init_struct(mla_network_ip_address_t)> mock_local_ips = mla_array_list_empty<mla_init_struct(mla_network_ip_address_t)>();
 
-static mla_array_list_t<mla_network_ip_address_t, mla_network_ip_address_initializer_t> mock_get_local_ip_addresses() {
+static mla_array_list_t<mla_init_struct(mla_network_ip_address_t)> mock_get_local_ip_addresses() {
     mock_get_local_ip_addresses_called = true;
     return mock_local_ips;
 }
@@ -104,7 +104,7 @@ inline void NetworkGetLocalIpAddressesTest() {
     g_network_low_level_operations.get_local_ip_addresses = mock_get_local_ip_addresses;
 
     mock_get_local_ip_addresses_called = false;
-    mock_local_ips = mla_array_list<mla_network_ip_address_t, mla_network_ip_address_initializer_t>();
+    mock_local_ips = mla_array_list<mla_init_struct(mla_network_ip_address_t)>();
     mla_array_list_add(mock_local_ips, mla_network_ip_address_ip4(mla_string_copy("127.0.0.1", 9)));
 
     auto result = mla_network_get_local_ip_addresses();
@@ -116,7 +116,7 @@ inline void NetworkGetLocalIpAddressesTest() {
         assert_true(mla_string_equals(ip.address, mla_string_const("127.0.0.1")), "IP address should match");
     }
 
-    mock_local_ips = mla_array_list_empty<mla_network_ip_address_t, mla_network_ip_address_initializer_t>();
+    mock_local_ips = mla_array_list_empty<mla_init_struct(mla_network_ip_address_t)>();
     g_network_low_level_operations = original;
 }
 

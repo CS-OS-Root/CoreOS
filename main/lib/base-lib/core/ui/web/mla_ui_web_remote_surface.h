@@ -11,7 +11,7 @@
 
 struct mla_ui_web_remote_surface_message_result_t {
     mla_bool_t handled;
-    mla_array_list_t<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t> inputEvents;
+    mla_array_list_t<mla_init_struct(mla_ui_surface_input_event_t)> inputEvents;
 };
 
 mla_ui_web_remote_surface_message_result_t mla_ui_web_remote_surface_message_result_no_successful();

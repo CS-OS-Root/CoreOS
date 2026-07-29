@@ -13,6 +13,10 @@
 struct mla_mutex_t {
     mla_string_t name;
     mla_pointer_t resource; // Pointer to the mutex resource
+
+    static mla_mutex_t init() {
+        return { mla_string_empty(), mla_pointer_null() };
+    }
 };
 
 mla_mutex_t mla_mutex_invalid();

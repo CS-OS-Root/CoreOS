@@ -61,8 +61,7 @@ struct my_array_list_with_const_test_struct {
 
 
 void ArrayListContainsMlaStringTest() {
-    mla_array_list_t<mla_string_t, mla_string_initializer> mla_arr = mla_array_list<mla_string_t,
-        mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> mla_arr = mla_array_list<mla_init_struct(mla_string_t)>();
 
     mla_array_list_add(mla_arr, mla_string("Hello"));
     mla_array_list_add(mla_arr, mla_string("World"));
@@ -219,8 +218,7 @@ void ArrayListItemMemoryManagementTest() {
     }
 
 
-    mla_array_list_t<mla_string_t, mla_string_initializer> mla_arr = mla_array_list<mla_string_t,
-        mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> mla_arr = mla_array_list<mla_init_struct(mla_string_t)>();
     mla_array_list_add(mla_arr, mla_str1);
     mla_array_list_add(mla_arr, mla_str2);
 
@@ -290,8 +288,7 @@ void ArrayListItemMemoryManagementDestroyTest() {
     } else {
         assert_fail("String 2 dataOwner buffer should not be null");
     } {
-        mla_array_list_t<mla_string_t, mla_string_initializer> mla_arr = mla_array_list<mla_string_t,
-            mla_string_initializer>();
+        mla_array_list_t<mla_init_struct(mla_string_t)> mla_arr = mla_array_list<mla_init_struct(mla_string_t)>();
         mla_array_list_add(mla_arr, mla_str1);
         mla_array_list_add(mla_arr, mla_str2);
 
@@ -345,10 +342,8 @@ void ArrayListItemMemoryManagementDestroy2Test() {
     } else {
         assert_fail("String 2 dataOwner buffer should not be null");
     } {
-        mla_array_list_t<mla_string_t, mla_string_initializer> other = mla_array_list<mla_string_t,
-            mla_string_initializer>(); {
-            mla_array_list_t<mla_string_t, mla_string_initializer> mla_arr = mla_array_list<mla_string_t,
-                mla_string_initializer>();
+        mla_array_list_t<mla_init_struct(mla_string_t)> other = mla_array_list<mla_init_struct(mla_string_t)>(); {
+            mla_array_list_t<mla_init_struct(mla_string_t)> mla_arr = mla_array_list<mla_init_struct(mla_string_t)>();
             mla_array_list_add(mla_arr, mla_str1);
             mla_array_list_add(mla_arr, mla_str2);
             other = mla_arr;
@@ -673,11 +668,10 @@ void ArrayListAddMuchItemsWithResizeBenchmark() {
     }
 }
 
-mla_array_list_t<mla_string_t, mla_string_initializer> mla_string_array = mla_array_list_empty<mla_string_t,
-    mla_string_initializer>();
+mla_array_list_t<mla_init_struct(mla_string_t)> mla_string_array = mla_array_list_empty<mla_init_struct(mla_string_t)>();
 
 void SetupArrayListDestroyBenchmark() {
-    mla_string_array = mla_array_list<mla_string_t, mla_string_initializer>(1000);
+    mla_string_array = mla_array_list<mla_init_struct(mla_string_t)>(1000);
 
     for (int i = 0; i < 1000; ++i) {
         mla_string_t data = mla_string_concat(mla_string("Item"), mla_string("Next"));
@@ -686,11 +680,11 @@ void SetupArrayListDestroyBenchmark() {
 }
 
 void ArrayListDestroyBenchmark() {
-    mla_string_array = mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_string_array = mla_array_list_empty<mla_init_struct(mla_string_t)>();
 }
 
 void TearDownArrayListDestroyBenchmark() {
-    mla_string_array = mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_string_array = mla_array_list_empty<mla_init_struct(mla_string_t)>();
 }
 
 mla_array_list_t<mla_test_int32_t> mla_sort_array = mla_array_list_empty<mla_test_int32_t>();

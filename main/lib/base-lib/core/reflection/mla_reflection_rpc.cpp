@@ -7,7 +7,7 @@
 #include "../rpc/mla_rpc.h"
 
 mla_reflection_rpc_struct_metadata_t mla_reflection_rpc_struct_metadata_invalid() {
-    return { mla_string_empty(), mla_array_list_empty<mla_reflection_rpc_struct_metadata_field_t, mla_reflection_rpc_struct_metadata_field_initializer>() };
+    return { mla_string_empty(), mla_array_list_empty<mla_init_struct(mla_reflection_rpc_struct_metadata_field_t)>() };
 }
 
 mla_bool_t mla_reflection_metadata_rpc_get_metadata(const mla_reflection_struct_metadata_request_t* request, mla_reflection_struct_metadata_response_t* response) {

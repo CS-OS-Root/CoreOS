@@ -8,19 +8,19 @@
 #include "../system/mla_hash_map.h"
 
 struct mla_reflection_container_t {
-    mla_hash_map_t<mla_string_t, mla_reflection_struct_metadata_provider_t, mla_string_hash_t, mla_string_initializer> structs;
+    mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_reflection_struct_metadata_provider_t> structs;
 };
 
 mla_reflection_container_t g_reflection_container = {
-    mla_hash_map<mla_string_t, mla_reflection_struct_metadata_provider_t, mla_string_hash_t, mla_string_initializer>()
+    mla_hash_map<mla_init_struct(mla_string_t), mla_string_hash_t, mla_reflection_struct_metadata_provider_t>()
 };
 
 mla_reflection_struct_metadata_t mla_reflection_struct_metadata_invalid() {
-    return {mla_string_empty(), 0, true, mla_array_list_empty<mla_reflection_struct_field_t, mla_reflection_struct_field_initializer>()};
+    return {mla_string_empty(), 0, true, mla_array_list_empty<mla_init_struct(mla_reflection_struct_field_t)>()};
 }
 
 mla_reflection_struct_metadata_t mla_reflection_struct_metadata_for(const mla_string_t &name, mla_size_t size) {
-    return {name, size, false, mla_array_list_empty<mla_reflection_struct_field_t, mla_reflection_struct_field_initializer>()};
+    return {name, size, false, mla_array_list_empty<mla_init_struct(mla_reflection_struct_field_t)>()};
 }
 
 void mla_reflection_struct_metadata_add_field(mla_reflection_struct_metadata_t& metadata, const mla_reflection_struct_field_t &field) {

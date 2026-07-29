@@ -855,9 +855,9 @@ mla_string_t mla_string_repeat(const mla_string_t &p_String, mla_size_t p_Times)
     return result;
 }
 
-mla_array_list_t<mla_string_t, mla_string_initializer> mla_string_split(const mla_string_t &p_String, const mla_string_t &p_Delimiter) {
+mla_array_list_t<mla_init_struct(mla_string_t)> mla_string_split(const mla_string_t &p_String, const mla_string_t &p_Delimiter) {
 
-    mla_array_list_t<mla_string_t, mla_string_initializer> result = mla_array_list<mla_string_t, mla_string_initializer>(1);
+    mla_array_list_t<mla_init_struct(mla_string_t)> result = mla_array_list<mla_init_struct(mla_string_t)>(1);
 
     if (mla_string_is_empty(p_String)) {
         mla_array_list_add(result, p_String);
@@ -907,7 +907,7 @@ mla_array_list_t<mla_string_t, mla_string_initializer> mla_string_split(const ml
     return result;
 }
 
-mla_string_t mla_string_join(const mla_array_list_t<mla_string_t, mla_string_initializer> &p_Strings, const mla_string_t &p_Delimiter) {
+mla_string_t mla_string_join(const mla_array_list_t<mla_init_struct(mla_string_t)> &p_Strings, const mla_string_t &p_Delimiter) {
 
     mla_size_t totalLength = 0;
     mla_size_t count = mla_array_list_size(p_Strings);

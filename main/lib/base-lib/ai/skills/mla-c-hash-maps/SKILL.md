@@ -10,16 +10,20 @@ The hash map module (`core/system/mla_hash_map.h`) provides a template-based key
 ## Template Parameters
 
 ```cpp
-mla_hash_map_t<TKey, TValue, Hasher, TKeyInit, TValueInit>
+#define mla_hash_map_template_full class TKey, class TKeyInit, class Hasher, class TValue, class TValueInit = mla_default_init(TValue)
+#define mla_hash_map_template class TKey, class TKeyInit, class TValue, class TValueInit = mla_default_init(TValue)
+
+#define mla_hash_map_t_param TKey, TKeyInit, TValue, TValueInit
+#define mla_hash_map_t_param_full TKey, TKeyInit, Hasher, TValue, TValueInit
 ```
 
 | Parameter | Purpose | Default |
 |---|---|---|
 | `TKey` | Key type | (required) |
+| `TKeyInit` | Key initializer parameter | `mla_init_struct(TKey)` / `mla_init_data(TKey)` |
+| `Hasher` | Struct with `static mla_size_t hash(const TKey&)` | (required in full template) |
 | `TValue` | Value type | (required) |
-| `Hasher` | Struct with `static mla_size_t hash(const TKey&)` | (required) |
-| `TKeyInit` | Key initializer (provides `static TKey init()`) | `mla_default_init(TKey)` |
-| `TValueInit` | Value initializer (provides `static TValue init()`) | `mla_default_init(TValue)` |
+| `TValueInit` | Value initializer parameter | `mla_init_struct(TValue)` / `mla_init_data(TValue)` |
 
 ## Built-In Hashers
 
@@ -35,17 +39,17 @@ mla_hash_map_t<TKey, TValue, Hasher, TKeyInit, TValueInit>
 #include "../system/mla_hash_map.h"
 
 // String → int32 map with 16 initial buckets
-mla_hash_map_t<mla_string_t, mla_int32_t,
+mla_hash_map_t<mla_init_struct(mla_string_t),
                mla_string_hash_t,
-               mla_string_initializer> map =
-    mla_hash_map<mla_string_t, mla_int32_t,
+               mla_init_data(mla_int32_t)> map =
+    mla_hash_map<mla_init_struct(mla_string_t),
                  mla_string_hash_t,
-                 mla_string_initializer>(16);
+                 mla_init_data(mla_int32_t)>(16);
 
 // Empty (sentinel) map
-auto emptyMap = mla_hash_map_empty<mla_string_t, mla_int32_t,
+auto emptyMap = mla_hash_map_empty<mla_init_struct(mla_string_t),
                                     mla_string_hash_t,
-                                    mla_string_initializer>();
+                                    mla_init_data(mla_int32_t)>();
 ```
 
 ### Defaults

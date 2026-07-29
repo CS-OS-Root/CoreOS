@@ -249,7 +249,7 @@ mla_bool_t mla_fs_delete_file(const mla_string_t& path) {
 
 }
 
-mla_bool_t mla_fs_list_files(const mla_string_t& path, mla_array_list_t<mla_string_t, mla_string_initializer>& out_entries) {
+mla_bool_t mla_fs_list_files(const mla_string_t& path, mla_array_list_t<mla_init_struct(mla_string_t)>& out_entries) {
 
     mla_file_system_mount_t file_system_mount = mla_file_system_mount_empty();
 
@@ -269,7 +269,7 @@ mla_bool_t mla_fs_list_files(const mla_string_t& path, mla_array_list_t<mla_stri
 
 mla_bool_t mla_fs_count_files(const mla_string_t& path, mla_size_t& out_count) {
 
-    mla_array_list_t<mla_string_t, mla_string_initializer> entries = mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> entries = mla_array_list_empty<mla_init_struct(mla_string_t)>();
 
     if (!mla_fs_list_files(path, entries)) {
         return false;
@@ -338,8 +338,8 @@ mla_bool_t mla_fs_directory_exists(const mla_string_t& path) {
 
 mla_bool_t mla_private_fs_delete_directory_recursive(mla_file_system_t& file_system, const mla_string_t& path) {
 
-    mla_array_list_t<mla_string_t, mla_string_initializer> files =
-        mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> files =
+        mla_array_list_empty<mla_init_struct(mla_string_t)>();
 
     if (!file_system.list_files(file_system, path, files)) {
         return false;
@@ -354,8 +354,8 @@ mla_bool_t mla_private_fs_delete_directory_recursive(mla_file_system_t& file_sys
         }
     }
 
-    mla_array_list_t<mla_string_t, mla_string_initializer> directories =
-        mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> directories =
+        mla_array_list_empty<mla_init_struct(mla_string_t)>();
 
     if (!file_system.list_directory(file_system, path, directories)) {
         return false;
@@ -393,7 +393,7 @@ mla_bool_t mla_fs_delete_directory(const mla_string_t& path) {
     return mla_private_fs_delete_directory_recursive(file_system_mount.file_system, relative_path);
 }
 
-mla_bool_t mla_fs_list_directory(const mla_string_t& path, mla_array_list_t<mla_string_t, mla_string_initializer>& out_entries) {
+mla_bool_t mla_fs_list_directory(const mla_string_t& path, mla_array_list_t<mla_init_struct(mla_string_t)>& out_entries) {
 
     mla_file_system_mount_t file_system_mount = mla_file_system_mount_empty();
 
@@ -430,8 +430,8 @@ mla_bool_t mla_fs_copy_directory(const mla_string_t& source_path, const mla_stri
         return false;
     }
 
-    mla_array_list_t<mla_string_t, mla_string_initializer> files =
-        mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> files =
+        mla_array_list_empty<mla_init_struct(mla_string_t)>();
 
     if (!mla_fs_list_files(source_path, files)) {
         return false;
@@ -447,8 +447,8 @@ mla_bool_t mla_fs_copy_directory(const mla_string_t& source_path, const mla_stri
         }
     }
 
-    mla_array_list_t<mla_string_t, mla_string_initializer> directories =
-        mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> directories =
+        mla_array_list_empty<mla_init_struct(mla_string_t)>();
 
     if (!mla_fs_list_directory(source_path, directories)) {
         return false;
@@ -471,7 +471,7 @@ mla_bool_t mla_fs_copy_directory(const mla_string_t& source_path, const mla_stri
 
 mla_bool_t mla_fs_count_directory(const mla_string_t& path, mla_size_t& out_count) {
 
-    mla_array_list_t<mla_string_t, mla_string_initializer> entries = mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    mla_array_list_t<mla_init_struct(mla_string_t)> entries = mla_array_list_empty<mla_init_struct(mla_string_t)>();
 
     if (!mla_fs_list_directory(path, entries)) {
         return false;
@@ -799,8 +799,8 @@ mla_string_t mla_fs_get_relative_path(const mla_string_t& base_path, const mla_s
 
     if (navigate_up_if_needed) {
 
-        mla_array_list_t<mla_string_t, mla_string_initializer> base_parts = mla_string_split(base_path, mla_fs_directory_seperator);
-        mla_array_list_t<mla_string_t, mla_string_initializer> target_parts = mla_string_split(target_path, mla_fs_directory_seperator);
+        mla_array_list_t<mla_init_struct(mla_string_t)> base_parts = mla_string_split(base_path, mla_fs_directory_seperator);
+        mla_array_list_t<mla_init_struct(mla_string_t)> target_parts = mla_string_split(target_path, mla_fs_directory_seperator);
 
         mla_size_t base_count = mla_array_list_size(base_parts);
         mla_size_t target_count = mla_array_list_size(target_parts);

@@ -54,6 +54,10 @@ struct mla_logger_rpc_log_entry_t {
     mla_string_t message;
     mla_string_t context1;
 
+    static mla_logger_rpc_log_entry_t init() {
+        return { 0, MLA_LOG_LEVEL_INFO, mla_string_empty(), mla_string_empty() };
+    }
+
     static mla_bool_t serialize(mla_serializer_t &serializer, const mla_pointer_t &obj) {
         const mla_logger_rpc_log_entry_t *logEntry = mla_pointer_get_data<const mla_logger_rpc_log_entry_t>(obj);
 
@@ -104,14 +108,8 @@ struct mla_logger_rpc_log_entry_t {
 mla_logger_rpc_log_entry_t mla_logger_rpc_log_entry_empty();
 
 
-struct mla_logger_rpc_log_entry_initializer {
-    static mla_logger_rpc_log_entry_t init() {
-        return mla_logger_rpc_log_entry_empty();
-    }
-};
-
 struct mla_logger_rpc_log_messages_t {
-    mla_array_list_t<mla_logger_rpc_log_entry_t, mla_logger_rpc_log_entry_initializer> entries;
+    mla_array_list_t<mla_init_struct(mla_logger_rpc_log_entry_t)> entries;
 
     static mla_bool_t serialize(mla_serializer_t &serializer, const mla_pointer_t &obj) {
         const mla_logger_rpc_log_messages_t *logMessages = mla_pointer_get_data<const

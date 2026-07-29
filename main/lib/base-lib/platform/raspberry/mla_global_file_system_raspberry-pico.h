@@ -51,7 +51,7 @@ mla_bool_t mla_private_file_system_pico_native_delete_directory(mla_file_system_
     return false;
 }
 
-mla_bool_t mla_private_file_system_pico_native_list_files(mla_file_system_t& file_system, const mla_string_t& path, mla_array_list_t<mla_string_t, mla_string_initializer>& out_entries) {
+mla_bool_t mla_private_file_system_pico_native_list_files(mla_file_system_t& file_system, const mla_string_t& path, mla_array_list_t<mla_init_struct(mla_string_t)>& out_entries) {
     (void)file_system;
     (void)path;
     (void)out_entries;
@@ -59,7 +59,7 @@ mla_bool_t mla_private_file_system_pico_native_list_files(mla_file_system_t& fil
     return true;
 }
 
-mla_bool_t mla_private_file_system_pico_native_list_directory(mla_file_system_t& file_system, const mla_string_t& path, mla_array_list_t<mla_string_t, mla_string_initializer>& out_entries) {
+mla_bool_t mla_private_file_system_pico_native_list_directory(mla_file_system_t& file_system, const mla_string_t& path, mla_array_list_t<mla_init_struct(mla_string_t)>& out_entries) {
     (void)file_system;
     (void)path;
     (void)out_entries;

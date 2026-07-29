@@ -63,7 +63,7 @@ inline void LoggerRpcGetMessagesAfterLoggingTest() {
 
     // Get the logged messages via RPC
     mla_logger_rpc_log_messages_t messages = {
-        mla_array_list_empty<mla_logger_rpc_log_entry_t, mla_logger_rpc_log_entry_initializer>()
+        mla_array_list_empty<mla_init_struct(mla_logger_rpc_log_entry_t)>()
     };
 
     assert_true(
@@ -102,7 +102,7 @@ inline void LoggerRpcGetMessagesAfterLoggingTest() {
     assert_true(foundError, "Error message not found in RPC log messages");
 
     // Cleanup
-    messages.entries = mla_array_list_empty<mla_logger_rpc_log_entry_t, mla_logger_rpc_log_entry_initializer>();
+    messages.entries = mla_array_list_empty<mla_init_struct(mla_logger_rpc_log_entry_t)>();
     mla_logger_rpc_deactivate();
 }
 

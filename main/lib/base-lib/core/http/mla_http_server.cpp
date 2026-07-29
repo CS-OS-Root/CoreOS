@@ -16,9 +16,9 @@
 #include "mla_websocket_client.h"
 #include "../url/mla_url.h"
 
-#define mla_handler_item_array_param mla_http_server_handler_item_t, mla_http_server_handler_item_initializer
-#define mla_websocket_handler_item_array_param mla_http_server_websocket_handler_item_t, mla_http_server_websocket_handler_item_initializer
-#define mla_websocket_connection_array_param mla_http_server_websocket_connection_t, mla_http_server_websocket_connection_initializer
+#define mla_handler_item_array_param mla_init_struct(mla_http_server_handler_item_t)
+#define mla_websocket_handler_item_array_param mla_init_struct(mla_http_server_websocket_handler_item_t)
+#define mla_websocket_connection_array_param mla_init_struct(mla_http_server_websocket_connection_t)
 
 mla_user_data_id_init(mla_http_task_user_data_server_name)
 
@@ -242,11 +242,11 @@ mla_http_server_websocket_handler_item_t mla_http_server_websocket_handler_inval
 
 
 struct mla_http_server_internal_resource_cleanup_userdata {
-    mla_array_list_t<mla_string_t, mla_string_initializer> active_tasks;
+    mla_array_list_t<mla_init_struct(mla_string_t)> active_tasks;
 
     static mla_http_server_internal_resource_cleanup_userdata init() {
         return {
-            mla_array_list_empty<mla_string_t, mla_string_initializer>()
+            mla_array_list_empty<mla_init_struct(mla_string_t)>()
         };
     }
 };
@@ -331,7 +331,7 @@ mla_bool_t mla_private_http_server_request_read(mla_network_connection_t &connec
     }
 
     // Parse request line
-    mla_array_list_t<mla_string_t, mla_string_initializer> parts = mla_string_split(requestLine, mla_string_const(" "));
+    mla_array_list_t<mla_init_struct(mla_string_t)> parts = mla_string_split(requestLine, mla_string_const(" "));
 
     if (mla_array_list_size(parts) < 3) {
         return false;
@@ -955,7 +955,7 @@ mla_bool_t mla_http_server_start(mla_http_server_t &server, mla_uint8_t number_o
     }
 
     mla_memset(cleanup_userdata, 0, sizeof(mla_http_server_internal_resource_cleanup_userdata));
-    cleanup_userdata->active_tasks = mla_array_list_empty<mla_string_t, mla_string_initializer>();
+    cleanup_userdata->active_tasks = mla_array_list_empty<mla_init_struct(mla_string_t)>();
 
     mla_string_t runtime_id = mla_generate_runtime_id();
 
@@ -1101,8 +1101,8 @@ mla_bool_t mla_http_server_find_websocket_connection(mla_http_server_t &server, 
     return false;
 }
 
-mla_array_list_t<mla_http_server_websocket_connection_t, mla_http_server_websocket_connection_initializer> mla_http_server_find_websocket_connections(mla_http_server_t &server, const mla_string_t &path_prefix) {
-    mla_array_list_t<mla_http_server_websocket_connection_t, mla_http_server_websocket_connection_initializer> result = mla_array_list_empty<mla_http_server_websocket_connection_t, mla_http_server_websocket_connection_initializer>();
+mla_array_list_t<mla_init_struct(mla_http_server_websocket_connection_t)> mla_http_server_find_websocket_connections(mla_http_server_t &server, const mla_string_t &path_prefix) {
+    mla_array_list_t<mla_init_struct(mla_http_server_websocket_connection_t)> result = mla_array_list_empty<mla_init_struct(mla_http_server_websocket_connection_t)>();
 
     if (!mla_rw_lock_read(server.websocketConnectionsLock)) {
         return result;
@@ -1149,9 +1149,9 @@ mla_bool_t mla_http_server_is_websocket_connection_open(const mla_http_server_we
     return mla_network_connection_is_connected(connection.connection);
 }
 
-mla_array_list_t<mla_http_server_websocket_handler_item_t, mla_http_server_websocket_handler_item_initializer> mla_http_server_get_websocket_handler_for_path(mla_http_server_t &server, const mla_string_t& path) {
+mla_array_list_t<mla_init_struct(mla_http_server_websocket_handler_item_t)> mla_http_server_get_websocket_handler_for_path(mla_http_server_t &server, const mla_string_t& path) {
 
-    mla_array_list_t<mla_http_server_websocket_handler_item_t, mla_http_server_websocket_handler_item_initializer> result = mla_array_list_empty<mla_http_server_websocket_handler_item_t, mla_http_server_websocket_handler_item_initializer>();
+    mla_array_list_t<mla_init_struct(mla_http_server_websocket_handler_item_t)> result = mla_array_list_empty<mla_init_struct(mla_http_server_websocket_handler_item_t)>();
 
     mla_http_request_t path_request = mla_http_request(path, mla_http_method_get);
 

@@ -91,8 +91,8 @@ inline void ListTaskCliTaskTest() {
     mla_user_data_set_pointer(outStream.userdata, mla_cli_module_TestOutputData_user_data_name, outputData_ptr);
 
     // Execute the list command
-    mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer> parameters =
-        mla_hash_map_empty<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer>();
+    mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> parameters =
+        mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
 
     if (cmdList != nullptr) {
         mla_bool_t result = cmdList->execute(*cmdList, parameters, outStream);
@@ -141,8 +141,8 @@ inline void KillCliTaskTest() {
     mla_user_data_set_pointer(outStream.userdata, mla_cli_module_TestOutputData_user_data_name, outputData_ptr);
 
     // Set up parameters for kill command
-    mla_hash_map_t<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer> parameters =
-        mla_hash_map_empty<mla_string_t, mla_string_t, mla_string_hash_t, mla_string_initializer, mla_string_initializer>();
+    mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> parameters =
+        mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
     mla_hash_map_push(parameters, mla_string_const("name"), taskName);
 
     // Execute the kill command

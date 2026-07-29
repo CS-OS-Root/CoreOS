@@ -16,6 +16,14 @@ struct mla_user_data_item_t {
     mla_user_data_id id;
     mla_pointer_t external_data;
     mla_dynamic_data_t data;
+
+    static mla_user_data_item_t init() {
+        return {
+            mla_user_data_name_empty,
+            mla_pointer_null(),
+            mla_dynamic_data_empty()
+        };
+    }
 };
 
 mla_user_data_item_t mla_user_data_item_empty() {
@@ -26,19 +34,12 @@ mla_user_data_item_t mla_user_data_item_empty() {
     };
 }
 
-struct mla_user_data_item_initializer {
-
-    static mla_user_data_item_t init() {
-        return mla_user_data_item_empty();
-    }
-};
-
 struct mla_user_data_list_t {
 
-    mla_array_list_t<mla_user_data_item_t, mla_user_data_item_initializer> datas;
+    mla_array_list_t<mla_init_struct(mla_user_data_item_t)> datas;
 
     static mla_user_data_list_t init() {
-        return {mla_array_list_empty<mla_user_data_item_t, mla_user_data_item_initializer>()};
+        return {mla_array_list_empty<mla_init_struct(mla_user_data_item_t)>()};
     }
 };
 

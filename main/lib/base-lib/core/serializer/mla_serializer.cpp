@@ -370,7 +370,7 @@ mla_bool_t mla_serializer_write_data_list(mla_serializer_t &serializer, const ml
 }
 
 mla_bool_t mla_serializer_write_data_list(mla_serializer_t &serializer, const mla_string_t &name,
-                               const mla_array_list_t<mla_string_t, mla_string_initializer> &list) {
+                               const mla_array_list_t<mla_init_struct(mla_string_t)> &list) {
     if (!serializer.write_property_name(serializer, name)) {
         return false;
     }
@@ -768,7 +768,7 @@ mla_bool_t mla_serializer_read_list(mla_deserializer_t &deserializer, mla_array_
 }
 
 mla_bool_t mla_serializer_read_list(mla_deserializer_t &deserializer,
-                                    mla_array_list_t<mla_string_t, mla_string_initializer> &list) {
+                                    mla_array_list_t<mla_init_struct(mla_string_t)> &list) {
     if (deserializer.current_token.type == MLA_DESERIALIZER_LIST_START) {
 
         while (deserializer.read_next(deserializer)) {

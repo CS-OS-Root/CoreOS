@@ -12,6 +12,10 @@ typedef mla_uint16_t mla_user_data_id;
 
 struct mla_user_data_t {
     mla_pointer_t data;
+
+    static mla_user_data_t init() {
+        return { mla_pointer_null() };
+    }
 };
 
 mla_user_data_id mla_get_next_user_data_id();
@@ -163,12 +167,5 @@ T mla_user_data_get_callback(const mla_user_data_t& userData, mla_user_data_id i
     return mla_r_cast<T>(callback_ptr);
 
 }
-
-struct mla_user_data_initializer {
-
-    static mla_user_data_t init() {
-        return mla_user_data_empty();
-    }
-};
 
 #endif

@@ -46,7 +46,7 @@ struct mla_http_request_t {
     mla_http_version version;
     mla_string_t url;
     mla_string_t method; // GET, POST, PUT, DELETE, etc.
-    mla_array_list_t<mla_http_header_t, mla_http_header_initializer> headers;
+    mla_array_list_t<mla_init_struct(mla_http_header_t)> headers;
     mla_stream_input_t  content; // Request body content
     mla_http_request_content_writer_t contentWriter; // Optional content writer for dynamic content
 };
@@ -56,7 +56,7 @@ inline mla_http_request_t mla_http_request_empty() {
         MLA_HTTP_VERSION_1_0,
             mla_string_empty(),
             mla_string_empty(),
-            mla_array_list_empty<mla_http_header_t, mla_http_header_initializer>(),
+            mla_array_list_empty<mla_init_struct(mla_http_header_t)>(),
             mla_stream_noop_input(),
         mla_http_request_content_writer_invalid()
     };
@@ -67,7 +67,7 @@ inline mla_http_request_t mla_http_request(const mla_string_t &p_Url, const mla_
         MLA_HTTP_VERSION_1_1,
             p_Url,
             p_Method,
-            mla_array_list_empty<mla_http_header_t, mla_http_header_initializer>(),
+            mla_array_list_empty<mla_init_struct(mla_http_header_t)>(),
             mla_stream_noop_input(),
         mla_http_request_content_writer_invalid()
     };

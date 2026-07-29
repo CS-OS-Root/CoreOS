@@ -30,9 +30,6 @@ struct mla_logger_t {
     mla_bool_t operator==(const mla_logger_t& other) const {
         return level == other.level && write == other.write && mla_user_data_equal(userData, other.userData);
     }
-};
-
-struct  mla_logger_initializer {
 
     static mla_logger_t init() {
         return  {
@@ -46,7 +43,7 @@ struct  mla_logger_initializer {
 };
 
 struct mla_logger_manager_t {
-    mla_array_list_t<mla_logger_t, mla_logger_initializer> loggers;
+    mla_array_list_t<mla_init_struct(mla_logger_t)> loggers;
 };
 
 mla_int32_t mla_log_indexOf_logger(const mla_string_t& loggerName);

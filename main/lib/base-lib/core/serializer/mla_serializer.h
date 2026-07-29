@@ -157,7 +157,7 @@ mla_bool_t mla_serializer_write_data_list(mla_serializer_t& serializer, const ml
 mla_bool_t mla_serializer_write_data_list(mla_serializer_t& serializer, const mla_string_t& name, const mla_array_list_t<mla_int64_t>& list);
 mla_bool_t mla_serializer_write_data_list(mla_serializer_t& serializer, const mla_string_t& name, const mla_array_list_t<mla_float_t>& list);
 mla_bool_t mla_serializer_write_data_list(mla_serializer_t& serializer, const mla_string_t& name, const mla_array_list_t<mla_double_t>& list);
-mla_bool_t mla_serializer_write_data_list(mla_serializer_t& serializer, const mla_string_t& name, const mla_array_list_t<mla_string_t, mla_string_initializer>& list);
+mla_bool_t mla_serializer_write_data_list(mla_serializer_t& serializer, const mla_string_t& name, const mla_array_list_t<mla_init_struct(mla_string_t)>& list);
 
 template <typename T>
 mla_bool_t mla_serializer_write_data_struct(mla_serializer_t& serializer, const T &value) {
@@ -270,7 +270,7 @@ mla_bool_t mla_serializer_read_list(mla_deserializer_t& deserializer, mla_array_
 mla_bool_t mla_serializer_read_list(mla_deserializer_t& deserializer, mla_array_list_t<mla_int64_t>& list);
 mla_bool_t mla_serializer_read_list(mla_deserializer_t& deserializer, mla_array_list_t<mla_float_t>& list);
 mla_bool_t mla_serializer_read_list(mla_deserializer_t& deserializer, mla_array_list_t<mla_double_t>& list);
-mla_bool_t mla_serializer_read_list(mla_deserializer_t& deserializer, mla_array_list_t<mla_string_t, mla_string_initializer>& list);
+mla_bool_t mla_serializer_read_list(mla_deserializer_t& deserializer, mla_array_list_t<mla_init_struct(mla_string_t)>& list);
 
 template <mla_array_list_template>
 mla_bool_t mla_serializer_read_list(mla_deserializer_t& deserializer, mla_array_list_t<T, TInit>& list, const mla_serialize_definition_read_function_t& read_function) {

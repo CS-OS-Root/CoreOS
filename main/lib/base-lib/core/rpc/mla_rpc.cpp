@@ -12,16 +12,16 @@
 #include "../serializer/mla_binary_serializer.h"
 
 struct  mla_rpc_container_t {
-    mla_array_list_t<mla_rpc_remote_endpoint_t, mla_rpc_remote_endpoint_initializer> remote_endpoints;
+    mla_array_list_t<mla_init_struct(mla_rpc_remote_endpoint_t)> remote_endpoints;
     mla_rw_lock_t remote_endpoints_lock;
-    mla_hash_map_t<mla_string_t, mla_rpc_procedure_unsafe_t, mla_string_hash_t, mla_string_initializer, mla_rpc_procedure_unsafe_initializer> procedures;
+    mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_rpc_procedure_unsafe_t)> procedures;
     mla_bool_t isLocked;
 };
 
 mla_rpc_container_t g_rpc_container = {
-    mla_array_list<mla_rpc_remote_endpoint_t, mla_rpc_remote_endpoint_initializer>(),
+    mla_array_list<mla_init_struct(mla_rpc_remote_endpoint_t)>(),
     mla_rw_lock_create("rpc_endpoints"),
-    mla_hash_map<mla_string_t, mla_rpc_procedure_unsafe_t, mla_string_hash_t, mla_string_initializer, mla_rpc_procedure_unsafe_initializer>(),
+    mla_hash_map<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_rpc_procedure_unsafe_t)>(),
     false
 };
 
@@ -182,7 +182,7 @@ mla_bool_t mla_rpc_execute_procedure_remote(const mla_string_t &procedure_name, 
     return endpoint.execute_procedure(endpoint.user_data, procedure_name, input_definition, output_definition, input_data, output_data);
 }
 
-mla_array_list_t<mla_rpc_procedure_unsafe_t, mla_rpc_procedure_unsafe_initializer> mla_rpc_list_procedures() {
+mla_array_list_t<mla_init_struct(mla_rpc_procedure_unsafe_t)> mla_rpc_list_procedures() {
     return mla_hash_map_values(g_rpc_container.procedures);
 }
 

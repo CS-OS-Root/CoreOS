@@ -58,7 +58,7 @@ inline void RandomUInt32Test() {
 inline void UuidUniquenessTest() {
     // Generate multiple UUIDs and verify they're all unique
     const mla_size_t count = 100;
-    mla_array_list_t<mla_string_t, mla_string_initializer> uuids = mla_array_list<mla_string_t, mla_string_initializer>(count);
+    mla_array_list_t<mla_init_struct(mla_string_t)> uuids = mla_array_list<mla_init_struct(mla_string_t)>(count);
 
     for (mla_size_t i = 0; i < count; i++) {
         mla_array_list_add(uuids, mla_generate_uuid());
@@ -79,7 +79,7 @@ inline void UuidUniquenessTest() {
 inline void RuntimeIdUniquenessTest() {
     // Generate multiple runtime IDs and verify they're all unique
     const mla_size_t count = 100;
-    mla_array_list_t<mla_string_t, mla_string_initializer> uuids = mla_array_list<mla_string_t, mla_string_initializer>(count);
+    mla_array_list_t<mla_init_struct(mla_string_t)> uuids = mla_array_list<mla_init_struct(mla_string_t)>(count);
 
     for (mla_size_t i = 0; i < count; i++) {
         mla_array_list_add(uuids, mla_generate_runtime_id());

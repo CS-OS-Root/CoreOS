@@ -10,8 +10,8 @@
 #include "../../task/mla_mutx.h"
 
 struct mla_ui_control_surface_drawing_t {
-    mla_array_list_t<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t> drawCommands;
-    mla_array_list_t<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t> unprocessedInputEvents;
+    mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)> drawCommands;
+    mla_array_list_t<mla_init_struct(mla_ui_surface_input_event_t)> unprocessedInputEvents;
     mla_uint64_t lastFrameTimeMs; // Time when the last frame was rendered
 };
 
@@ -19,11 +19,11 @@ mla_ui_control_surface_drawing_t mla_ui_control_surface_drawing_empty();
 
 struct mla_ui_control_surface_rendering_t;
 
-typedef mla_bool_t (*mla_ui_control_surface_process_task_t)(mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t> &root, const mla_ui_surface_size_t& surfaceSize, const mla_ui_surface_input_states_t &input_states);
+typedef mla_bool_t (*mla_ui_control_surface_process_task_t)(mla_array_list_t<mla_init_struct(mla_ui_control_t)> &root, const mla_ui_surface_size_t& surfaceSize, const mla_ui_surface_input_states_t &input_states);
 
 struct mla_ui_control_surface_rendering_t {
-    mla_array_list_t<mla_ui_control_t, mla_ui_control_initializer_t> root;
-    mla_array_list_t<mla_ui_control_input_area_t, mla_ui_control_input_area_initializer_t> inputAreas;
+    mla_array_list_t<mla_init_struct(mla_ui_control_t)> root;
+    mla_array_list_t<mla_init_struct(mla_ui_control_input_area_t)> inputAreas;
     mla_ui_control_surface_process_task_t processTask;
 };
 

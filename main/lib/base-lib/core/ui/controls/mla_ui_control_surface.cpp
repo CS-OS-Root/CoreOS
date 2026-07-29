@@ -15,24 +15,24 @@ mla_user_data_id_init(mla_ui_control_surface_task_id_user_data_name)
 
 mla_ui_control_surface_drawing_t mla_ui_control_surface_drawing_empty() {
     return {
-    mla_array_list_empty<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t>(),
-        mla_array_list_empty<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t>(),
+    mla_array_list_empty<mla_init_struct(mla_ui_surface_draw_command_t)>(),
+        mla_array_list_empty<mla_init_struct(mla_ui_surface_input_event_t)>(),
         0
     };
 }
 
 mla_ui_control_surface_rendering_t mla_ui_control_surface_rendering_empty() {
     return {
-        mla_array_list_empty<mla_ui_control_t, mla_ui_control_initializer_t>(),
-        mla_array_list_empty<mla_ui_control_input_area_t, mla_ui_control_input_area_initializer_t>(),
+        mla_array_list_empty<mla_init_struct(mla_ui_control_t)>(),
+        mla_array_list_empty<mla_init_struct(mla_ui_control_input_area_t)>(),
         nullptr
     };
 }
 
 mla_ui_control_surface_rendering_t mla_ui_control_surface_rendering_create(const mla_ui_control_surface_process_task_t &renderingTask) {
     return {
-        mla_array_list_empty<mla_ui_control_t, mla_ui_control_initializer_t>(),
-        mla_array_list_empty<mla_ui_control_input_area_t, mla_ui_control_input_area_initializer_t>(),
+        mla_array_list_empty<mla_init_struct(mla_ui_control_t)>(),
+        mla_array_list_empty<mla_init_struct(mla_ui_control_input_area_t)>(),
         renderingTask
     };
 }
@@ -160,14 +160,14 @@ mla_task_process_result_state mla_private_ui_control_surface_render_task(mla_use
 
     mla_ui_control_surface_t* connector = mla_user_data_get_pointer_data<mla_ui_control_surface_t>(userData, mla_ui_control_surface_connector_user_data_name);
 
-    mla_array_list_t<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t> unprocessedInputEvents = mla_array_list_empty<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t>();
+    mla_array_list_t<mla_init_struct(mla_ui_surface_input_event_t)> unprocessedInputEvents = mla_array_list_empty<mla_init_struct(mla_ui_surface_input_event_t)>();
 
     if (!mla_mutex_trylock(connector->lock, mla_ui_control_surface_rendering_lock_timeout_ms)) {
         return TASK_PROCESS_RESULT_CONTINUE;
     }
 
     unprocessedInputEvents = connector->drawing.unprocessedInputEvents;
-    connector->drawing.unprocessedInputEvents = mla_array_list_empty<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t>();
+    connector->drawing.unprocessedInputEvents = mla_array_list_empty<mla_init_struct(mla_ui_surface_input_event_t)>();
 
     // Unlock while rendering
     mla_mutex_unlock(connector->lock);
@@ -197,8 +197,8 @@ mla_task_process_result_state mla_private_ui_control_surface_render_task(mla_use
     mla_user_data_set_pointer(context_user_data, mla_ui_control_surface_text_size_user_data_name, connector_ptr);
 
     mla_ui_control_context_t context = mla_ui_control_context(surfaceSize.width, surfaceSize.height, input_states, mla_private_ui_control_surface_calc_text_size, timeSinceLastFrameMs, context_user_data);
-    mla_array_list_t<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t> drawCommands = mla_array_list<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t>();
-    mla_array_list_t<mla_ui_control_input_area_t, mla_ui_control_input_area_initializer_t> inputAreas = mla_array_list<mla_ui_control_input_area_t, mla_ui_control_input_area_initializer_t>();
+    mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)> drawCommands = mla_array_list<mla_init_struct(mla_ui_surface_draw_command_t)>();
+    mla_array_list_t<mla_init_struct(mla_ui_control_input_area_t)> inputAreas = mla_array_list<mla_init_struct(mla_ui_control_input_area_t)>();
 
     mla_bool_t hasControlsToRender = mla_array_list_size(connector->rendering.root) > 0;
 
@@ -244,10 +244,10 @@ mla_task_process_result_state mla_private_ui_control_surface_drawing_task(mla_us
         return TASK_PROCESS_RESULT_CONTINUE;
     }
 
-    mla_array_list_t<mla_ui_surface_draw_command_t, mla_ui_surface_draw_command_initializer_t> drawCommands = connector->drawing.drawCommands;
+    mla_array_list_t<mla_init_struct(mla_ui_surface_draw_command_t)> drawCommands = connector->drawing.drawCommands;
     mla_mutex_unlock(connector->lock);
 
-    mla_array_list_t<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t> newUnprocessedInputEvents = mla_array_list_empty<mla_ui_surface_input_event_t, mla_ui_surface_input_event_initializer_t>();
+    mla_array_list_t<mla_init_struct(mla_ui_surface_input_event_t)> newUnprocessedInputEvents = mla_array_list_empty<mla_init_struct(mla_ui_surface_input_event_t)>();
 
     // Render to surface
     if (mla_ui_surface_render_draw_commands(
@@ -293,7 +293,7 @@ mla_bool_t mla_ui_control_surface_start(mla_ui_control_surface_t &connector) {
     }
 
     // Init rendering
-    connector.rendering.inputAreas = mla_array_list_empty<mla_ui_control_input_area_t, mla_ui_control_input_area_initializer_t>();
+    connector.rendering.inputAreas = mla_array_list_empty<mla_init_struct(mla_ui_control_input_area_t)>();
     connector.drawing.lastFrameTimeMs = mla_uint64_max;
 
     mla_string_t id = mla_generate_runtime_id();
@@ -358,7 +358,7 @@ mla_bool_t mla_ui_control_surface_start_single_threaded_mode(mla_ui_control_surf
     }
 
     // Init rendering
-    connector.rendering.inputAreas = mla_array_list_empty<mla_ui_control_input_area_t, mla_ui_control_input_area_initializer_t>();
+    connector.rendering.inputAreas = mla_array_list_empty<mla_init_struct(mla_ui_control_input_area_t)>();
     connector.drawing.lastFrameTimeMs = mla_uint64_max;
 
     mla_string_t id = mla_generate_runtime_id();
