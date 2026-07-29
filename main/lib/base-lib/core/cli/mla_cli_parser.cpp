@@ -66,27 +66,34 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
     }
 
     // Skip whitespace between command and parameters
-    while (matchedPositon + 1 < commandLength && commandData[matchedPositon] == ' ' && commandData[matchedPositon + 1] == ' ') {
+    while (matchedPositon < commandLength && commandData[matchedPositon] == ' ') {
         matchedPositon++;
     }
-
 
     mla_string_t activeParamForValueAutocomplete = mla_string_empty();
     mla_string_t activeParamValuePrefix = mla_string_empty();
     mla_bool_t isValueAutocompleteActive = false;
 
     // Match the parameters
-    while (matchedPositon + 3 < commandLength) {
-        // Check if we are at the beginning of a parameter
-        if (commandData[matchedPositon] != ' ' || commandData[matchedPositon + 1] != '-' || commandData[
-                matchedPositon + 2] != '-') {
+    while (matchedPositon < commandLength) {
+        // Skip whitespace before parameter
+        while (matchedPositon < commandLength && commandData[matchedPositon] == ' ') {
+            matchedPositon++;
+        }
+
+        if (matchedPositon >= commandLength) {
+            break;
+        }
+
+        // Check if we are at the beginning of a parameter (--paramName)
+        if (matchedPositon + 1 >= commandLength || commandData[matchedPositon] != '-' || commandData[matchedPositon + 1] != '-') {
             break;
         }
 
         // Find the end of the parameter name
-        mla_size_t paramNameStart = matchedPositon + 3;
+        mla_size_t paramNameStart = matchedPositon + 2;
         mla_size_t paramNameEnd = paramNameStart;
-        while (paramNameEnd < commandLength && commandData[paramNameEnd] != ' ') {
+        while (paramNameEnd < commandLength && commandData[paramNameEnd] != ' ' && commandData[paramNameEnd] != '=') {
             paramNameEnd++;
         }
 
@@ -114,47 +121,44 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
             mla_hash_map_push(result.matchingParameters, paramName, mla_string_empty());
             matchedPositon = paramNameEnd;
 
-            // Skip whitespace between parameters
-            while (matchedPositon + 1 < commandLength && commandData[matchedPositon] == ' ' &&
-                commandData[matchedPositon + 1] == ' ') {
+            // Skip whitespace after flag
+            while (matchedPositon < commandLength && commandData[matchedPositon] == ' ') {
                 matchedPositon++;
             }
             continue;
         }
 
-        if (commandLength <= paramNameEnd) {
+        if (paramNameEnd >= commandLength) {
             isValueAutocompleteActive = false;
             break;
         }
 
-        if (commandData[paramNameEnd] != ' ') {
+        if (commandData[paramNameEnd] != ' ' && commandData[paramNameEnd] != '=') {
             isValueAutocompleteActive = false;
             break;
         }
 
         matchedPositon = paramNameEnd;
 
-        // Skip whitespace between parameter name and value
-        while (matchedPositon + 1 < commandLength && commandData[matchedPositon] == ' ' && commandData[matchedPositon + 1] == ' ') {
+        // Skip whitespace and optional '=' between parameter name and value
+        while (matchedPositon < commandLength && (commandData[matchedPositon] == ' ' || commandData[matchedPositon] == '=')) {
             matchedPositon++;
         }
 
         // Extract the parameter value
         mla_size_t paramValueStart = matchedPositon;
 
-        // Check if the parameter is quoted
+        // Check if the parameter value is quoted
         mla_bool_t isQuoted = false;
+        mla_char_t quoteChar = '\"';
 
-        if (paramValueStart < commandLength && commandData[paramValueStart] == ' ') {
+        if (paramValueStart < commandLength && (commandData[paramValueStart] == '\"' || commandData[paramValueStart] == '\'')) {
+            isQuoted = true;
+            quoteChar = commandData[paramValueStart];
             paramValueStart++;
-
-            if (paramValueStart < commandLength && commandData[paramValueStart] == '\"') {
-                isQuoted = true;
-                paramValueStart++;
-            }
         }
 
-        if (paramValueStart >= commandLength) {
+        if (paramValueStart >= commandLength && !isQuoted) {
             // No parameter value found yet
             if (matchingParamRef != nullptr && matchingParamRef->value_autocomplete_fn != nullptr) {
                 activeParamForValueAutocomplete = paramName;
@@ -168,9 +172,18 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
 
         // Find the end of the parameter value
         mla_size_t paramValueEnd = paramValueStart;
+        mla_bool_t closedQuoteFound = false;
+
         if (isQuoted) {
-            while (paramValueEnd < commandLength && commandData[paramValueEnd] != '\"') {
-                paramValueEnd++;
+            while (paramValueEnd < commandLength) {
+                if (commandData[paramValueEnd] == '\\' && paramValueEnd + 1 < commandLength) {
+                    paramValueEnd += 2;
+                } else if (commandData[paramValueEnd] == quoteChar) {
+                    closedQuoteFound = true;
+                    break;
+                } else {
+                    paramValueEnd++;
+                }
             }
         } else {
             while (paramValueEnd < commandLength && commandData[paramValueEnd] != ' ') {
@@ -178,25 +191,59 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
             }
         }
 
+        if (isQuoted && !closedQuoteFound) {
+            // Unterminated quote
+            if (matchingParamRef != nullptr && matchingParamRef->value_autocomplete_fn != nullptr) {
+                activeParamForValueAutocomplete = paramName;
+                activeParamValuePrefix = mla_string_substr(command, paramValueStart, paramValueEnd - paramValueStart);
+                isValueAutocompleteActive = true;
+            } else {
+                isValueAutocompleteActive = false;
+            }
+            break;
+        }
+
         mla_string_t paramValue = mla_string_empty();
 
         if (isQuoted) {
-            paramValue = mla_string_substr(command, paramValueStart, paramValueEnd - paramValueStart);
-            if (paramValueEnd < commandLength && commandData[paramValueEnd] == '\"') {
-                paramValueEnd++; // Skip the ending quote
+            mla_bool_t hasEscapes = false;
+            for (mla_size_t k = paramValueStart; k < paramValueEnd; ++k) {
+                if (commandData[k] == '\\') {
+                    hasEscapes = true;
+                    break;
+                }
             }
-        } else {
-            if (paramNameEnd == commandLength - 1) {
-                paramValue = mla_string_substr(command, paramValueStart, paramValueEnd);
+
+            if (hasEscapes) {
+                mla_size_t rawLen = paramValueEnd - paramValueStart;
+                mla_char_t* tempBuf = mla_r_cast<mla_char_t*>(mla_platform_malloc(rawLen + 1));
+                mla_size_t outIdx = 0;
+                for (mla_size_t k = paramValueStart; k < paramValueEnd; ++k) {
+                    if (commandData[k] == '\\' && k + 1 < paramValueEnd) {
+                        k++;
+                        tempBuf[outIdx++] = commandData[k];
+                    } else {
+                        tempBuf[outIdx++] = commandData[k];
+                    }
+                }
+                tempBuf[outIdx] = '\0';
+                paramValue = mla_string_copy(tempBuf, outIdx);
+                mla_platform_free(tempBuf);
             } else {
                 paramValue = mla_string_substr(command, paramValueStart, paramValueEnd - paramValueStart);
             }
+
+            if (paramValueEnd < commandLength && commandData[paramValueEnd] == quoteChar) {
+                paramValueEnd++; // Skip the ending quote
+            }
+        } else {
+            paramValue = mla_string_substr(command, paramValueStart, paramValueEnd - paramValueStart);
         }
 
         mla_hash_map_push(result.matchingParameters, paramName, paramValue);
         matchedPositon = paramValueEnd;
 
-        if ((paramValueEnd == commandLength || (paramValueEnd == commandLength - 1 && commandData[paramValueEnd] == ' ')) &&
+        if ((paramValueEnd == commandLength || (paramValueEnd < commandLength && commandData[paramValueEnd] == ' ')) &&
             matchingParamRef != nullptr && matchingParamRef->value_autocomplete_fn != nullptr) {
             activeParamForValueAutocomplete = paramName;
             activeParamValuePrefix = paramValue;
@@ -206,18 +253,18 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
         }
 
         // Skip whitespace between parameters
-        while (matchedPositon + 1 < commandLength && commandData[matchedPositon] == ' ' && commandData[matchedPositon + 1] == ' ') {
+        while (matchedPositon < commandLength && commandData[matchedPositon] == ' ') {
             matchedPositon++;
         }
     }
 
     // Skip ending whitespace
-    while (matchedPositon + 1 < commandLength && commandData[matchedPositon] == ' ' && commandData[matchedPositon + 1] == ' ') {
+    while (matchedPositon < commandLength && commandData[matchedPositon] == ' ') {
         matchedPositon++;
     }
 
-    // All Data Parsed or last character is a space
-    if (matchedPositon == commandLength || (matchedPositon == commandLength - 1 && commandData[matchedPositon] == ' ')) {
+    // All Data Parsed or ended cleanly
+    if (matchedPositon == commandLength) {
         result.isValid = true;
     }
 
@@ -247,13 +294,12 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
                 }
             }
         }
-    } else if (matchedPositon + 3 < commandLength && commandData[matchedPositon] == ' ' && commandData[matchedPositon + 1]
-        == '-' && commandData[matchedPositon + 2] == '-') {
+    } else if (matchedPositon + 1 < commandLength && commandData[matchedPositon] == '-' && commandData[matchedPositon + 1] == '-') {
 
         // We are in the middle of a parameter name
-        mla_size_t paramNameStart = matchedPositon + 3;
+        mla_size_t paramNameStart = matchedPositon + 2;
         mla_size_t paramNameEnd = paramNameStart;
-        while (paramNameEnd < commandLength && commandData[paramNameEnd] != ' ') {
+        while (paramNameEnd < commandLength && commandData[paramNameEnd] != ' ' && commandData[paramNameEnd] != '=') {
             paramNameEnd++;
         }
         mla_string_t paramName = mla_string_substr(command, paramNameStart, paramNameEnd - paramNameStart);

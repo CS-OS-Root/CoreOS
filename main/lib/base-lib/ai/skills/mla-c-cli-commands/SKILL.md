@@ -142,6 +142,17 @@ The CLI app supports command chaining using the `&&` operator. Multiple commands
 Example input:
 `network connect --host 127.0.0.1 && network status`
 
+## Quoted Parameter Values
+
+Parameter values containing spaces or special characters can be enclosed in double quotes (`"..."`) or single quotes (`'...'`). Both space separation (`--param "value"`) and equals sign syntax (`--param="value"`) are supported.
+
+Example inputs:
+- `init --name "This is a name with a space"`
+- `project create --title 'My New Application'`
+- `config set --value="Value with spaces"`
+
+Escaped characters inside quotes (e.g., `\"`) are automatically unescaped when parsed into the parameter map.
+
 ## Step 5 — Attach User Data to a Command (Optional)
 
 Use `mla_user_data_t` to pass state to the execute callback without globals:

@@ -108,6 +108,68 @@ inline void ParseCommandWithQuotedParameters() {
 
 }
 
+inline void ParseCommandWithInitQuotedParameter() {
+    mla_cli_parser_t parser = mla_cli_parser();
+
+    mla_cli_command_t cmdInit = mla_cli_command(mla_string_const("init"), nullptr);
+    mla_cli_command_add_parameter(cmdInit, mla_string_const("name"), true);
+    mla_array_list_add(parser.availableCommands, cmdInit);
+
+    auto result = mla_cli_parser_parse(parser, mla_string("init --name \"This is a name with a space\""));
+    assert_true(result.isValid, "Command init with double quoted name should be valid");
+    assert_struct_equal(mla_string_t, result.matchingCommand.name, mla_string("init"), "Command name should be 'init'");
+    assert_equal(mla_hash_map_size(result.matchingParameters), (mla_size_t)1, "There should be 1 parameter");
+    assert_true(mla_hash_map_contains(result.matchingParameters, mla_string("name")), "Parameters should contain 'name'");
+    if (mla_hash_map_contains(result.matchingParameters, mla_string("name"))) {
+        assert_struct_equal(mla_string_t, *mla_hash_map_get_ref(result.matchingParameters, mla_string("name")), mla_string("This is a name with a space"), "Parameter 'name' should be 'This is a name with a space'");
+    }
+}
+
+inline void ParseCommandWithSingleQuotedParameter() {
+    mla_cli_parser_t parser = mla_cli_parser();
+
+    mla_cli_command_t cmdInit = mla_cli_command(mla_string_const("init"), nullptr);
+    mla_cli_command_add_parameter(cmdInit, mla_string_const("name"), true);
+    mla_array_list_add(parser.availableCommands, cmdInit);
+
+    auto result = mla_cli_parser_parse(parser, mla_string("init --name 'This is a name with a space'"));
+    assert_true(result.isValid, "Command init with single quoted name should be valid");
+    assert_struct_equal(mla_string_t, result.matchingCommand.name, mla_string("init"), "Command name should be 'init'");
+    assert_equal(mla_hash_map_size(result.matchingParameters), (mla_size_t)1, "There should be 1 parameter");
+    assert_true(mla_hash_map_contains(result.matchingParameters, mla_string("name")), "Parameters should contain 'name'");
+    if (mla_hash_map_contains(result.matchingParameters, mla_string("name"))) {
+        assert_struct_equal(mla_string_t, *mla_hash_map_get_ref(result.matchingParameters, mla_string("name")), mla_string("This is a name with a space"), "Parameter 'name' should be 'This is a name with a space'");
+    }
+}
+
+inline void ParseCommandWithEqualsQuotedParameter() {
+    mla_cli_parser_t parser = mla_cli_parser();
+
+    mla_cli_command_t cmdInit = mla_cli_command(mla_string_const("init"), nullptr);
+    mla_cli_command_add_parameter(cmdInit, mla_string_const("name"), true);
+    mla_array_list_add(parser.availableCommands, cmdInit);
+
+    auto result = mla_cli_parser_parse(parser, mla_string("init --name=\"This is a name with a space\""));
+    assert_true(result.isValid, "Command init with equals sign syntax should be valid");
+    assert_struct_equal(mla_string_t, result.matchingCommand.name, mla_string("init"), "Command name should be 'init'");
+    assert_equal(mla_hash_map_size(result.matchingParameters), (mla_size_t)1, "There should be 1 parameter");
+    assert_true(mla_hash_map_contains(result.matchingParameters, mla_string("name")), "Parameters should contain 'name'");
+    if (mla_hash_map_contains(result.matchingParameters, mla_string("name"))) {
+        assert_struct_equal(mla_string_t, *mla_hash_map_get_ref(result.matchingParameters, mla_string("name")), mla_string("This is a name with a space"), "Parameter 'name' should be 'This is a name with a space'");
+    }
+}
+
+inline void ParseCommandWithUnterminatedQuote() {
+    mla_cli_parser_t parser = mla_cli_parser();
+
+    mla_cli_command_t cmdInit = mla_cli_command(mla_string_const("init"), nullptr);
+    mla_cli_command_add_parameter(cmdInit, mla_string_const("name"), true);
+    mla_array_list_add(parser.availableCommands, cmdInit);
+
+    auto result = mla_cli_parser_parse(parser, mla_string("init --name \"This is incomplete"));
+    assert_false(result.isValid, "Command with unterminated quote should not be valid");
+}
+
 inline void ParseCommandWithOnlyMandatoryParameters() {
     mla_cli_parser_t parser = mla_cli_parser();
 
@@ -422,6 +484,18 @@ void RegisterCliParserTests(mla_test_executor_t &p_TestExecutor) {
 
     // New comprehensive tests
     test = mla_test("ParseCommandWithQuotedParameters", test_category, ParseCommandWithQuotedParameters);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("ParseCommandWithInitQuotedParameter", test_category, ParseCommandWithInitQuotedParameter);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("ParseCommandWithSingleQuotedParameter", test_category, ParseCommandWithSingleQuotedParameter);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("ParseCommandWithEqualsQuotedParameter", test_category, ParseCommandWithEqualsQuotedParameter);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("ParseCommandWithUnterminatedQuote", test_category, ParseCommandWithUnterminatedQuote);
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("ParseCommandWithOnlyMandatoryParameters", test_category, ParseCommandWithOnlyMandatoryParameters);
