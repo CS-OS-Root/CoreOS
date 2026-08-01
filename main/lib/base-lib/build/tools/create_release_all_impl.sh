@@ -223,10 +223,10 @@ for config in "${BUILD_CONFIGS[@]}"; do
 
     if [ "$copied_any" = false ]; then
         echo "Warning: No app binary found to stage for configuration $config_name"
+    else
+        processed_release_dirs+=("${platform};${config_name};${release_dir}")
+        built_count=$((built_count + 1))
     fi
-
-    processed_release_dirs+=("${platform};${config_name};${release_dir}")
-    built_count=$((built_count + 1))
 done
 
 echo "========================================================================"
@@ -254,9 +254,9 @@ echo "========================================================================"
 VERSION="$specified_version"
 if [ -z "$VERSION" ]; then
     echo "Fetching existing releases for '$PRODUCT_NAME' from $RELEASES_SERVER_URL/$PRODUCT_NAME/ ..."
-    server_html=$(curl -sL "${RELEASES_SERVER_URL}/${PRODUCT_NAME}/" 2>/dev/null || true)
+    server_html=$(curl -sL "${RELEASES_SERVER_URL}/${PRODUCT_NAME}/?raw=true" 2>/dev/null || true)
     
-    # Extract version strings like 0.0.1 or v0.0.1
+    # Extract version strings like 0.0.1
     versions=($(echo "$server_html" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | sort -V | uniq))
     
     if [ ${#versions[@]} -gt 0 ]; then
@@ -275,6 +275,19 @@ else
     echo "Using specified version: $VERSION"
 fi
 
+# Function to recursively ensure remote subdirectories exist on Miniserve
+ensure_remote_dir() {
+    local target_dir="$1"
+    IFS='/' read -ra parts <<< "$target_dir"
+    local current=""
+    for part in "${parts[@]}"; do
+        if [ -n "$part" ]; then
+            curl -s -o /dev/null -F "mkdir=${part}" "${RELEASES_SERVER_URL}/upload?path=${current}/" || true
+            current="${current}/${part}"
+        fi
+    done
+}
+
 # Upload binaries for each processed release directory
 upload_success=true
 for item in "${processed_release_dirs[@]}"; do
@@ -284,15 +297,27 @@ for item in "${processed_release_dirs[@]}"; do
         continue
     fi
 
+    # Check if local release directory contains any files before proceeding
+    shopt -s nullglob
+    rfiles=("$rdir"/*)
+    shopt -u nullglob
+
+    if [ ${#rfiles[@]} -eq 0 ]; then
+        echo "Skipping publish for $plat/$cfg: release directory $rdir is empty."
+        continue
+    fi
+
     target_path="/${PRODUCT_NAME}/${VERSION}/${plat}/${cfg}"
     upload_url="${RELEASES_SERVER_URL}/upload?path=${target_path}"
     
+    ensure_remote_dir "$target_path"
+    
     echo "Uploading release artifacts for $plat/$cfg to $target_path ..."
-    for file in "$rdir"/*; do
+    for file in "${rfiles[@]}"; do
         if [ -f "$file" ]; then
             fname=$(basename "$file")
             echo "  - Uploading $fname ..."
-            res=$(curl -s -w "%{http_code}" -o /dev/null -F "file_to_upload=@${file}" "$upload_url")
+            res=$(curl -s -w "%{http_code}" -o /dev/null -F "path=@${file}" "$upload_url")
             if [[ "$res" =~ ^2[0-9][0-9]$ ]] || [[ "$res" == "302" ]] || [[ "$res" == "303" ]]; then
                 echo "    Uploaded successfully (HTTP $res)."
             else
@@ -303,34 +328,33 @@ for item in "${processed_release_dirs[@]}"; do
     done
 done
 
-# Create Git Tag
-echo "========================================================================"
-echo "Creating Git Release Tag v${VERSION}..."
-echo "========================================================================"
-
-git_tag="v${VERSION}"
-if git rev-parse "$git_tag" >/dev/null 2>&1; then
-    echo "Warning: Git tag '$git_tag' already exists."
-else
-    git tag -a "$git_tag" -m "Release $git_tag"
-    if [ $? -eq 0 ]; then
-        echo "Successfully created git tag '$git_tag'."
-        
-        if git remote | grep -q 'origin'; then
-            echo "Pushing tag '$git_tag' to remote origin..."
-            git push origin "$git_tag"
-        fi
-    else
-        echo "Error: Failed to create git tag '$git_tag'."
-    fi
-fi
-
 if [ "$upload_success" = true ]; then
+    # Create Git Tag only after successful uploads
+    echo "========================================================================"
+    echo "Creating Git Release Tag v${VERSION}..."
+    echo "========================================================================"
+
+    git_tag="v${VERSION}"
+    if git rev-parse "$git_tag" >/dev/null 2>&1; then
+        echo "Warning: Git tag '$git_tag' already exists."
+    else
+        git tag -a "$git_tag" -m "Release $git_tag"
+        if [ $? -eq 0 ]; then
+            echo "Successfully created git tag '$git_tag'."
+            
+            if git remote | grep -q 'origin'; then
+                echo "Pushing tag '$git_tag' to remote origin..."
+                git push origin "$git_tag"
+            fi
+        else
+            echo "Error: Failed to create git tag '$git_tag'."
+        fi
+    fi
     echo "========================================================================"
     echo "Successfully published release $VERSION to $RELEASES_SERVER_URL/${PRODUCT_NAME}/${VERSION}/"
     echo "========================================================================"
     return 0 2>/dev/null || exit 0
 else
-    echo "Warning: Release publish completed with some upload errors."
+    echo "Error: Release publish failed due to upload errors. Git tag creation aborted."
     return 1 2>/dev/null || exit 1
 fi

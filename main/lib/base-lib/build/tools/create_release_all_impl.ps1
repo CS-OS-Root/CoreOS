@@ -202,7 +202,7 @@ $targetVersion = $Version
 if (-not $targetVersion) {
     Write-Host "Fetching existing releases for '$productName' from $releasesServerUrl/$productName/ ..."
     try {
-        $html = Invoke-RestMethod -Uri "$releasesServerUrl/$productName/" -Method Get -ErrorAction SilentlyContinue
+        $html = Invoke-RestMethod -Uri "$releasesServerUrl/$productName/?raw=true" -Method Get -ErrorAction SilentlyContinue
         $matches = [regex]::Matches($html, '(\d+\.\d+\.\d+)')
         $versions = @($matches | ForEach-Object { $_.Value } | Select-Object -Unique | Sort-Object { [version]$_ })
         
@@ -226,6 +226,20 @@ if (-not $targetVersion) {
     Write-Host "Using specified version: $targetVersion" -ForegroundColor Green
 }
 
+function Ensure-RemoteDir {
+    param (
+        [string]$TargetPath
+    )
+    $parts = $TargetPath.Split('/') | Where-Object { $_ -ne "" }
+    $current = ""
+    foreach ($part in $parts) {
+        if (Get-Command "curl.exe" -ErrorAction SilentlyContinue) {
+            & curl.exe -s -o NUL -F "mkdir=$part" "$releasesServerUrl/upload?path=$current/" | Out-Null
+        }
+        $current = "$current/$part"
+    }
+}
+
 # Upload files to Miniserve
 $uploadSuccess = $true
 foreach ($item in $processedReleaseDirs) {
@@ -236,15 +250,21 @@ foreach ($item in $processedReleaseDirs) {
     $uploadUrl = "$releasesServerUrl/upload?path=$targetPath"
 
     $files = Get-ChildItem -Path $rdir -File
+    if ($files.Count -eq 0) {
+        Write-Host "Skipping publish for $($item.Platform)/$($item.Compiler): release directory $rdir is empty." -ForegroundColor Yellow
+        continue
+    }
+
+    Ensure-RemoteDir -TargetPath $targetPath
     foreach ($file in $files) {
         Write-Host "Uploading $($file.Name) to $targetPath ..."
         try {
             if (Get-Command "curl.exe" -ErrorAction SilentlyContinue) {
-                & curl.exe -s -w "%{http_code}" -o NUL -F "file_to_upload=@$($file.FullName)" $uploadUrl | Out-Null
+                & curl.exe -s -w "%{http_code}" -o NUL -F "path=@$($file.FullName)" $uploadUrl | Out-Null
                 Write-Host "  Uploaded $($file.Name) successfully." -ForegroundColor Green
             } else {
                 $form = @{
-                    file_to_upload = $file
+                    path = $file
                 }
                 Invoke-RestMethod -Uri $uploadUrl -Method Post -Form $form | Out-Null
                 Write-Host "  Uploaded $($file.Name) successfully." -ForegroundColor Green
@@ -256,27 +276,27 @@ foreach ($item in $processedReleaseDirs) {
     }
 }
 
-# Git release tag
-Write-Host "========================================================================" -ForegroundColor Cyan
-Write-Host "Creating Git Release Tag v$targetVersion..." -ForegroundColor Cyan
-Write-Host "========================================================================" -ForegroundColor Cyan
-
-$gitTag = "v$targetVersion"
-& git tag -l $gitTag | Out-Null
-if ($LASTEXITCODE -eq 0) {
-    & git tag -a $gitTag -m "Release $gitTag"
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "Successfully created git tag '$gitTag'." -ForegroundColor Green
-        & git push origin $gitTag
-    }
-}
-
 if ($uploadSuccess) {
+    # Git release tag only if uploads succeeded
+    Write-Host "========================================================================" -ForegroundColor Cyan
+    Write-Host "Creating Git Release Tag v$targetVersion..." -ForegroundColor Cyan
+    Write-Host "========================================================================" -ForegroundColor Cyan
+
+    $gitTag = "v$targetVersion"
+    & git tag -l $gitTag | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        & git tag -a $gitTag -m "Release $gitTag"
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Successfully created git tag '$gitTag'." -ForegroundColor Green
+            & git push origin $gitTag
+        }
+    }
+
     Write-Host "Successfully published release $targetVersion to $releasesServerUrl/$productName/$targetVersion/" -ForegroundColor Green
     $global:LASTEXITCODE = 0
     exit 0
 } else {
-    Write-Host "Release publish completed with some upload errors." -ForegroundColor Yellow
+    Write-Host "Error: Release publish failed due to upload errors. Git tag creation aborted." -ForegroundColor Red
     $global:LASTEXITCODE = 1
     exit 1
 }

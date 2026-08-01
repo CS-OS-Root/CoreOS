@@ -100,6 +100,9 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER MATCHES "fi
 
     if(CMAKE_CXX_COMPILER MATCHES "fil" OR CMAKE_CXX_COMPILER MATCHES "filc")
         add_compile_options(-Qunused-arguments -Dmla_use_stacktraces=0)
+        add_link_options(-Qunused-arguments)
+        string(REGEX REPLACE "-D[A-Za-z0-9_]+(=[0-9]+)?" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+        string(REGEX REPLACE "-D[A-Za-z0-9_]+(=[0-9]+)?" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
     endif()
 
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
