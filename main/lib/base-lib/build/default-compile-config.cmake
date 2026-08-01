@@ -83,7 +83,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # Set Options for static linking libc++.dll and libstdc++.dll and libwinpthread-1.dll Even if we dont need it
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++ -static")
     message(STATUS "Configured MSVC Compiler ${CMAKE_CXX_COMPILER}")
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER MATCHES "filc")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER MATCHES "fil" OR CMAKE_CXX_COMPILER MATCHES "filc")
 
     # Enable all warnings and treat them as errors
     # Disable exceptions to reduce binary size
@@ -92,13 +92,13 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER MATCHES "fi
     message(STATUS "Configured Clang Compiler ${CMAKE_CXX_COMPILER}")
 
     # Zig/Filc compiler uses clang but does not support address sanitizer
-    if(NOT (CMAKE_CXX_COMPILER MATCHES "zig" OR CMAKE_CXX_COMPILER MATCHES "filc")  AND CMAKE_BUILD_TYPE MATCHES Debug)
+    if(NOT (CMAKE_CXX_COMPILER MATCHES "zig" OR CMAKE_CXX_COMPILER MATCHES "fil" OR CMAKE_CXX_COMPILER MATCHES "filc")  AND CMAKE_BUILD_TYPE MATCHES Debug)
         message("Enabling Address Sanitizer for Debug Build")
         add_compile_options(-fsanitize=address)
         add_link_options(-fsanitize=address)
     endif()
 
-    if(CMAKE_CXX_COMPILER MATCHES "filc" OR CMAKE_C_COMPILER MATCHES "filc")
+    if(CMAKE_CXX_COMPILER MATCHES "fil" OR CMAKE_CXX_COMPILER MATCHES "filc")
         add_compile_options(-Qunused-arguments -Dmla_use_stacktraces=0)
     endif()
 
