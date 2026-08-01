@@ -25,5 +25,12 @@ You are working in the `mla-core/main` repository, which contains the `mla-c` fr
    - The root instruction files `AGENTS.md` and `GEMINI.md` are generated copies of `lib/<module-name>/ai/INTRO.md` and `lib/<module-name>/ai/RULES.md`. Any changes to rules or intro documentation MUST be made in `lib/<module-name>/ai/` and synced to `AGENTS.md` and `GEMINI.md`.
 10. **Include Placement**: All `#include` directives MUST be placed strictly at the top of source (`.cpp`) and header (`.h`) files, immediately following file headers/comments and header guards. **NEVER** place `#include` directives in the middle of a file, between functions, or inside functions/blocks.
 
+## Code Style
+
+1. **Brace Compliance**: Always wrap single-line control statements (`if`, `for`, `while`, `do`) in explicit braces `{ ... }` to comply with `clang-tidy` rules (`readability-braces-around-statements`). Do not write single-line unbraced statements (e.g., `if (cond) return;`).
+2. **No Static Functions in CPP Files**: Do not use `static` functions or helper methods in `.cpp` files as they are unnecessary. Use `mla_private_` prefix naming instead:
+   - **Incorrect**: `static mla_external_task_t mla_private_external_task_create_internal(...)`
+   - **Correct**: `mla_external_task_t mla_private_external_task_create_internal(...)`
+
 ## Detailed Instructions / Skills
 Detailed instructions about framework modules (array lists, strings, memory, networking, tests, etc.) are available as skills.

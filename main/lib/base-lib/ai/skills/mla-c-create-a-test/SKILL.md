@@ -94,3 +94,18 @@ Or for a specific compiler configuration:
 
 ### Header Guards
 Use #ifndef [FILENAME]_H format matching the filename
+
+## Two-Pass Test Execution & Allocation Failure Injection
+
+In the MLA-C framework, every registered unit test runs **twice** by default:
+1. **Pass 1 (Normal Run)**: Executes with standard memory allocations.
+2. **Pass 2 (Forced Allocation Failure Run)**: Executes with `block_memory_allocations = true`, where all heap allocations (`mla_malloc`, `mla_platform_malloc`) return `NULL` to test error handling and guard against memory leaks/crashes under out-of-memory (OOM) conditions.
+
+### Guidelines for Two-Pass Execution:
+- **Empty Path Operations**: String and path construction functions (e.g. `mla_fs_get_complete_os_absolute_path`, `mla_fs_combine_paths`, `mla_string_concat`) return an empty string (`""`) when heap allocations fail in Pass 2.
+- **External Task Execution**: Always verify that working directory paths are non-empty (`!mla_string_is_empty(path)`) before invoking external tasks via `mla_external_task_create(cmd, path)`. In test helper setup code, guard against empty paths with an early return:
+  ```cpp
+  mla_string_t os_path = mla_fs_get_complete_os_absolute_path(dir);
+  if (mla_string_is_empty(os_path)) { return; }
+  ```
+

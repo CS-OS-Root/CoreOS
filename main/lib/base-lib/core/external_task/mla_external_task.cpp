@@ -45,12 +45,7 @@ mla_external_task_t mla_external_task_invalid() {
     };
 }
 
-mla_external_task_t mla_external_task_create(const mla_string_t& p_CmdLine) {
-    return mla_external_task_create(p_CmdLine, mla_string_empty());
-}
-
-mla_external_task_t mla_external_task_create(const mla_string_t& p_CmdLine, const mla_string_t &p_WorkingDirectory) {
-
+mla_external_task_t mla_private_external_task_create_internal(const mla_string_t& p_CmdLine, const mla_string_t &p_WorkingDirectory) {
     if (mla_string_is_empty(p_CmdLine)) {
         return mla_external_task_invalid();
     }
@@ -82,8 +77,19 @@ mla_external_task_t mla_external_task_create(const mla_string_t& p_CmdLine, cons
     };
 
     return result;
-
 }
+
+mla_external_task_t mla_external_task_create(const mla_string_t& p_CmdLine) {
+    return mla_private_external_task_create_internal(p_CmdLine, mla_string_empty());
+}
+
+mla_external_task_t mla_external_task_create(const mla_string_t& p_CmdLine, const mla_string_t &p_WorkingDirectory) {
+    if (mla_string_is_empty(p_WorkingDirectory)) {
+        return mla_external_task_invalid();
+    }
+    return mla_private_external_task_create_internal(p_CmdLine, p_WorkingDirectory);
+}
+
 
 mla_external_task_state mla_external_task_get_state(const mla_external_task_t& p_Task) {
 
