@@ -102,9 +102,8 @@ mla_cli_history_store_t mla_cli_history_store_init(mla_size_t max_per_key = 10);
  * @param store History store to record into.
  * @param key Identification key.
  * @param value Parameter value string to record.
- * @param vfs_file_path Optional VFS file path to auto-save to.
  */
-void mla_cli_history_record_value(mla_cli_history_store_t &store, const mla_string_t &key, const mla_string_t &value, const mla_string_t &vfs_file_path = mla_string_const("/.cli_history.json"));
+void mla_cli_history_record_value(mla_cli_history_store_t &store, const mla_string_t &key, const mla_string_t &value);
 
 /**
  * @brief Retrieves history candidates matching a prefix.

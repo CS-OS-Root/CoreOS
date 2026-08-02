@@ -52,6 +52,7 @@ struct mla_cli_app_t {
 mla_cli_app_t mla_cli_app_empty();
 mla_cli_app_t mla_cli_app_init(mla_cli_module_t& rootModule, mla_stream_output_t& outputStream);
 mla_bool_t mla_cli_app_update_and_process_input(mla_cli_app_t& app, mla_stream_input_t& inputStream, mla_stream_output_t& outputStream);
+mla_string_t mla_private_cli_longest_common_prefix(const mla_array_list_t<mla_init_struct(mla_string_t)> &candidates);
 
 
 

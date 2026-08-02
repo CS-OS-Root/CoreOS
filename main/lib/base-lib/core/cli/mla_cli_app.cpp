@@ -605,7 +605,7 @@ void mla_private_cli_handle_special_key(mla_cli_app_t &app, mla_private_cli_key_
     mla_private_cli_redraw_line(app, outputStream);
 }
 
-static mla_string_t mla_private_cli_longest_common_prefix(const mla_array_list_t<mla_init_struct(mla_string_t)> &candidates) {
+mla_string_t mla_private_cli_longest_common_prefix(const mla_array_list_t<mla_init_struct(mla_string_t)> &candidates) {
     mla_size_t count = mla_array_list_size(candidates);
     if (count == 0) {
         return mla_string_empty();

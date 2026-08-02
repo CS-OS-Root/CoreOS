@@ -9,7 +9,7 @@ mla_cli_history_store_t mla_cli_history_store_init(mla_size_t max_per_key) {
     return mla_cli_history_store_t::init(max_per_key);
 }
 
-void mla_cli_history_record_value(mla_cli_history_store_t &store, const mla_string_t &key, const mla_string_t &value, const mla_string_t &vfs_file_path) {
+void mla_cli_history_record_value(mla_cli_history_store_t &store, const mla_string_t &key, const mla_string_t &value) {
     if (mla_string_is_empty(key) || mla_string_is_empty(value)) {
         return;
     }
@@ -45,10 +45,6 @@ void mla_cli_history_record_value(mla_cli_history_store_t &store, const mla_stri
 
     mla_cli_history_entry_t new_entry = { key, value };
     mla_array_list_add(store.entries, new_entry);
-
-    if (!mla_string_is_empty(vfs_file_path)) {
-        mla_cli_history_save_to_file(store, vfs_file_path);
-    }
 }
 
 mla_array_list_t<mla_init_struct(mla_string_t)> mla_cli_history_get_candidates(const mla_cli_history_store_t &store,
