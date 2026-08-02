@@ -90,7 +90,11 @@ mla_bool_t mla_private_file_system_native_delete_file(mla_file_system_t& file_sy
 
     int result = unlink(mla_string_data(fullPath));
     if (result != 0 && (errno == EACCES || errno == EPERM)) {
-        chmod(mla_string_data(fullPath), S_IRUSR | S_IWUSR | S_IXUSR);
+        chmod(mla_string_data(fullPath), S_IRWXU | S_IRWXG | S_IRWXO);
+        mla_string_t parentPath = mla_fs_get_parent_directory(fullPath);
+        if (!mla_string_is_empty(parentPath)) {
+            chmod(mla_string_data(parentPath), S_IRWXU | S_IRWXG | S_IRWXO);
+        }
         result = unlink(mla_string_data(fullPath));
     }
 
@@ -139,8 +143,19 @@ mla_bool_t mla_private_file_system_native_delete_directory(mla_file_system_t& fi
     }
 
     mla_string_t fullPath = mla_private_file_system_native_file_path_to_full_path(fs, path);
+    if (mla_string_ends_with(fullPath, mla_linux_fs_directory_seperator)) {
+        fullPath = mla_string_substr(fullPath, 0, mla_string_length(fullPath) - 1);
+    }
 
     int result = rmdir(mla_string_data(fullPath));
+    if (result != 0 && (errno == EACCES || errno == EPERM)) {
+        chmod(mla_string_data(fullPath), S_IRWXU | S_IRWXG | S_IRWXO);
+        mla_string_t parentPath = mla_fs_get_parent_directory(fullPath);
+        if (!mla_string_is_empty(parentPath)) {
+            chmod(mla_string_data(parentPath), S_IRWXU | S_IRWXG | S_IRWXO);
+        }
+        result = rmdir(mla_string_data(fullPath));
+    }
 
     return result == 0 || errno == ENOENT;
 }
@@ -173,8 +188,19 @@ mla_bool_t mla_private_file_system_native_list_files(mla_file_system_t& file_sys
     }
 
     mla_string_t fullPath = mla_private_file_system_native_file_path_to_full_path(fs, path);
+    if (mla_string_ends_with(fullPath, mla_linux_fs_directory_seperator)) {
+        fullPath = mla_string_substr(fullPath, 0, mla_string_length(fullPath) - 1);
+    }
 
     DIR* dir = opendir(mla_string_data(fullPath));
+    if (dir == nullptr && (errno == EACCES || errno == EPERM)) {
+        chmod(mla_string_data(fullPath), S_IRWXU | S_IRWXG | S_IRWXO);
+        mla_string_t parentPath = mla_fs_get_parent_directory(fullPath);
+        if (!mla_string_is_empty(parentPath)) {
+            chmod(mla_string_data(parentPath), S_IRWXU | S_IRWXG | S_IRWXO);
+        }
+        dir = opendir(mla_string_data(fullPath));
+    }
 
     if (dir == nullptr) {
         return false;
@@ -217,8 +243,19 @@ mla_bool_t mla_private_file_system_native_list_directory(mla_file_system_t& file
     }
 
     mla_string_t fullPath = mla_private_file_system_native_file_path_to_full_path(fs, path);
+    if (mla_string_ends_with(fullPath, mla_linux_fs_directory_seperator)) {
+        fullPath = mla_string_substr(fullPath, 0, mla_string_length(fullPath) - 1);
+    }
 
     DIR* dir = opendir(mla_string_data(fullPath));
+    if (dir == nullptr && (errno == EACCES || errno == EPERM)) {
+        chmod(mla_string_data(fullPath), S_IRWXU | S_IRWXG | S_IRWXO);
+        mla_string_t parentPath = mla_fs_get_parent_directory(fullPath);
+        if (!mla_string_is_empty(parentPath)) {
+            chmod(mla_string_data(parentPath), S_IRWXU | S_IRWXG | S_IRWXO);
+        }
+        dir = opendir(mla_string_data(fullPath));
+    }
 
     if (dir == nullptr) {
         return false;
