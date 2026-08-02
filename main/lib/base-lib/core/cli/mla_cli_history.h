@@ -98,17 +98,13 @@ struct mla_cli_history_store_t {
 mla_cli_history_store_t mla_cli_history_store_init(mla_size_t max_per_key = 10);
 
 /**
- * @brief Returns reference to global singleton CLI history store.
- */
-mla_cli_history_store_t &mla_cli_history_global_store();
-
-/**
  * @brief Records a parameter value for a key in the history store.
  * @param store History store to record into.
  * @param key Identification key.
  * @param value Parameter value string to record.
+ * @param vfs_file_path Optional VFS file path to auto-save to.
  */
-void mla_cli_history_record_value(mla_cli_history_store_t &store, const mla_string_t &key, const mla_string_t &value);
+void mla_cli_history_record_value(mla_cli_history_store_t &store, const mla_string_t &key, const mla_string_t &value, const mla_string_t &vfs_file_path = mla_string_const("/.cli_history.json"));
 
 /**
  * @brief Retrieves history candidates matching a prefix.
@@ -133,8 +129,9 @@ mla_bool_t mla_cli_history_save_to_file(const mla_cli_history_store_t &store, co
  * @brief Loads history store from a VFS file path using framework deserialization.
  * @param store History store to populate.
  * @param vfs_file_path VFS path.
+ * @param max_per_key Maximum history entries saved per key.
  * @return true on success, false on failure.
  */
-mla_bool_t mla_cli_history_load_from_file(mla_cli_history_store_t &store, const mla_string_t &vfs_file_path);
+mla_bool_t mla_cli_history_load_from_file(mla_cli_history_store_t &store, const mla_string_t &vfs_file_path, mla_size_t max_per_key = 10);
 
 #endif // MLA_CLI_HISTORY_H

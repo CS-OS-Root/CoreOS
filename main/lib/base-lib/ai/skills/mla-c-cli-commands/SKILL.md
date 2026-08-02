@@ -195,9 +195,9 @@ static mla_array_list_t<mla_init_struct(mla_string_t)> my_parameter_autocomplete
     const mla_user_data_t &userData) {
     (void)command; (void)parameterName; (void)userData;
 
-    // Retrieve history candidates
+    // Retrieve history candidates from an app/module history store
     mla_array_list_t<mla_init_struct(mla_string_t)> candidates =
-        mla_cli_history_get_candidates(mla_cli_history_global_store(), mla_string_const("module:cmd:param"), currentValuePrefix);
+        mla_cli_history_get_candidates(my_history_store, mla_string_const("module:cmd:param"), currentValuePrefix);
 
     // Add static/preset candidates
     mla_array_list_add(candidates, mla_string_const("preset1"));
@@ -210,7 +210,7 @@ static mla_array_list_t<mla_init_struct(mla_string_t)> my_parameter_autocomplete
 On successful command execution, record used parameter values so they are suggested on future tab-completions:
 
 ```cpp
-mla_cli_history_record_value(mla_cli_history_global_store(), mla_string_const("module:cmd:param"), param_value);
+mla_cli_history_record_value(my_history_store, mla_string_const("module:cmd:param"), param_value);
 ```
 
 ## Output Helpers

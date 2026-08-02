@@ -605,6 +605,50 @@ void mla_private_cli_handle_special_key(mla_cli_app_t &app, mla_private_cli_key_
     mla_private_cli_redraw_line(app, outputStream);
 }
 
+static mla_string_t mla_private_cli_longest_common_prefix(const mla_array_list_t<mla_init_struct(mla_string_t)> &candidates) {
+    mla_size_t count = mla_array_list_size(candidates);
+    if (count == 0) {
+        return mla_string_empty();
+    }
+
+    const mla_string_t *first = mla_array_list_get_ref(candidates, 0);
+    if (first == nullptr) {
+        return mla_string_empty();
+    }
+
+    mla_size_t firstLen = mla_string_length(*first);
+    if (firstLen == 0) {
+        return mla_string_empty();
+    }
+
+    const mla_char_t *firstData = mla_string_data(*first);
+    mla_size_t lcpLen = 0;
+
+    for (mla_size_t charIdx = 0; charIdx < firstLen; ++charIdx) {
+        mla_char_t ch = firstData[charIdx];
+        mla_bool_t matchAll = true;
+
+        for (mla_size_t i = 1; i < count; ++i) {
+            const mla_string_t *cand = mla_array_list_get_ref(candidates, i);
+            if (cand == nullptr || charIdx >= mla_string_length(*cand) || mla_string_data(*cand)[charIdx] != ch) {
+                matchAll = false;
+                break;
+            }
+        }
+
+        if (!matchAll) {
+            break;
+        }
+        lcpLen++;
+    }
+
+    if (lcpLen == 0) {
+        return mla_string_empty();
+    }
+
+    return mla_string_substr(*first, 0, lcpLen);
+}
+
 void mla_private_cli_autocomplete(mla_cli_app_t &app, mla_stream_output_t &outputStream) {
     mla_cli_parser_t parser = mla_private_cli_setup_parser(app);
     mla_cli_parser_result result = mla_cli_parser_parse(parser, app.currentLine);
@@ -626,13 +670,27 @@ void mla_private_cli_autocomplete(mla_cli_app_t &app, mla_stream_output_t &outpu
         return;
     }
 
-    // Multiple candidates: list them, then redraw the prompt with the current line
+    // Multiple candidates: check for Longest Common Prefix (LCP)
+    mla_string_t lcp = mla_private_cli_longest_common_prefix(result.possibleAutoCompletions);
+    mla_size_t lcpLen = mla_string_length(lcp);
+
+    if (lcpLen > 0) {
+        app.currentLine = mla_string_concat(app.currentLine, lcp);
+        app.cursorPos = mla_string_length(app.currentLine);
+    }
+
+    // List remaining candidates underneath, then redraw the prompt with current line
     mla_private_cli_write_c_string(outputStream, "\r\n");
     for (mla_size_t i = 0; i < completionCount; ++i) {
         mla_string_t *completion = mla_array_list_get_ref(result.possibleAutoCompletions, i);
         mla_private_cli_write_c_string(outputStream, "  ");
         mla_private_cli_write_string(outputStream, app.currentLine);
-        mla_private_cli_write_string(outputStream, *completion);
+        if (lcpLen > 0 && mla_string_starts_with(*completion, lcp)) {
+            mla_string_t remainingSuffix = mla_string_substr(*completion, lcpLen);
+            mla_private_cli_write_string(outputStream, remainingSuffix);
+        } else {
+            mla_private_cli_write_string(outputStream, *completion);
+        }
         mla_private_cli_write_c_string(outputStream, "\n");
     }
     mla_private_cli_redraw_line(app, outputStream);

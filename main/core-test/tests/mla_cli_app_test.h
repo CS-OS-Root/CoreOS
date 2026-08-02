@@ -7,6 +7,7 @@
 
 #include "../../lib/base-lib/test-support/mla_test_executor.h"
 #include "../../lib/base-lib/core/cli/mla_cli_app.h"
+#include "../../lib/base-lib/core/cli/mla_cli_history.h"
 #include "../../lib/base-lib/core/system/mla_stream.h"
 
 // Test execution flags for command testing
@@ -634,6 +635,101 @@ inline void WindowsArrowKeyTest() {
     assert_equal(app.cursorPos, (mla_size_t)3, "Cursor should be at end of the recalled line");
 }
 
+static mla_array_list_t<mla_init_struct(mla_string_t)> test_source_autocomplete_lcp(
+    const mla_cli_command_t &command,
+    const mla_string_t &parameterName,
+    const mla_string_t &currentValuePrefix,
+    const mla_user_data_t &userData) {
+    (void)command; (void)parameterName; (void)userData;
+    mla_array_list_t<mla_init_struct(mla_string_t)> list = mla_array_list_empty<mla_init_struct(mla_string_t)>();
+    mla_array_list_add(list, mla_string_const("https://github.com/mla-c/mla-core.git"));
+    mla_array_list_add(list, mla_string_const("https://github.com/mla-c/base-lib.git"));
+    return mla_cli_parameter_value_autocomplete_filter_candidates(list, currentValuePrefix);
+}
+
+inline void LcpAutocompleteTest() {
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_cli_command_t createCmd = mla_cli_command(mla_string_const("create"), nullptr);
+    mla_cli_command_parameter_t sourceParam = mla_cli_command_parameter(
+        mla_string_const("source"), mla_string_const("Repository source"), true, false, test_source_autocomplete_lcp);
+    mla_cli_command_add_parameter(createCmd, sourceParam);
+    mla_cli_module_add_command(root, createCmd);
+
+    mla_stream_output_t output = mla_stream_noop_output();
+    mla_cli_app_t app = mla_cli_app_init(root, output);
+
+    FeedCliInput(app, output, mla_string("create --source http"));
+    FeedCliInput(app, output, mla_string("\t"));
+
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("create --source https://github.com/mla-c/"),
+                        "LCP tab completion should fill line up to longest common prefix");
+    assert_equal(app.cursorPos, mla_string_length(app.currentLine), "Cursor should advance to end of common prefix");
+}
+
+inline void BackspacePostAutocompleteTest() {
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_cli_command_t createCmd = mla_cli_command(mla_string_const("create"), nullptr);
+    mla_cli_command_parameter_t sourceParam = mla_cli_command_parameter(
+        mla_string_const("source"), mla_string_const("Repository source"), true, false, test_source_autocomplete_lcp);
+    mla_cli_command_add_parameter(createCmd, sourceParam);
+    mla_cli_module_add_command(root, createCmd);
+
+    mla_stream_output_t output = mla_stream_noop_output();
+    mla_cli_app_t app = mla_cli_app_init(root, output);
+
+    FeedCliInput(app, output, mla_string("create --source"));
+    FeedCliInput(app, output, mla_string("\t"));
+
+    FeedCliInput(app, output, mla_string("\x7f"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("create --sourc"), "Backspace should delete 'e' cleanly");
+    assert_equal(app.cursorPos, mla_string_length(app.currentLine), "Cursor should be updated after backspace");
+
+    FeedCliInput(app, output, mla_string("\x7f"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("create --sour"), "Backspace should delete 'c' cleanly");
+}
+
+inline void CliHistoryPersistenceTest() {
+    mla_cli_history_store_t store = mla_cli_history_store_init(10);
+    mla_string_t key = mla_string_const("sandbox:create:source");
+    mla_string_t val1 = mla_string_const("https://github.com/mla-c/mla-core.git");
+    mla_string_t val2 = mla_string_const("https://github.com/mla-c/base-lib.git");
+
+    mla_cli_history_record_value(store, key, val1);
+    mla_cli_history_record_value(store, key, val2);
+
+    mla_cli_history_store_t loadedStore = mla_cli_history_store_init(10);
+    mla_bool_t loaded = mla_cli_history_load_from_file(loadedStore, mla_string_const("/.cli_history.json"), 10);
+    assert_true(loaded, "History should be successfully loaded from VFS file");
+
+    auto candidates = mla_cli_history_get_candidates(loadedStore, key, mla_string_const("https"));
+    assert_equal(mla_array_list_size(candidates), (mla_size_t)2, "Loaded history should return recorded candidates");
+}
+
+inline void CliHistoryMaxPerKeyPruningTest() {
+    mla_cli_history_store_t store = mla_cli_history_store_init(10);
+    mla_string_t key = mla_string_const("test:key");
+
+    mla_cli_history_record_value(store, key, mla_string_const("v1"));
+    mla_cli_history_record_value(store, key, mla_string_const("v2"));
+    mla_cli_history_record_value(store, key, mla_string_const("v3"));
+    mla_cli_history_record_value(store, key, mla_string_const("v4"));
+    mla_cli_history_record_value(store, key, mla_string_const("v5"));
+
+    assert_equal(mla_array_list_size(store.entries), (mla_size_t)5, "Store should hold 5 entries initially");
+
+    // Load with max_per_key = 2 into new store
+    mla_cli_history_store_t prunedStore = mla_cli_history_store_init(10);
+    mla_bool_t loaded = mla_cli_history_load_from_file(prunedStore, mla_string_const("/.cli_history.json"), 2);
+    assert_true(loaded, "History file should be loaded");
+    assert_equal(prunedStore.max_entries_per_key, (mla_size_t)2, "Pruned store should update max_entries_per_key to 2");
+    assert_equal(mla_array_list_size(prunedStore.entries), (mla_size_t)2, "Excess entries should be pruned down to 2");
+
+    auto candidates = mla_cli_history_get_candidates(prunedStore, key, mla_string_const("v"));
+    assert_equal(mla_array_list_size(candidates), (mla_size_t)2, "Should only have 2 candidate entries remaining");
+    assert_struct_equal(mla_string_t, mla_array_list_get_unsafe(candidates, 0), mla_string("v4"), "Oldest entries should be dropped");
+    assert_struct_equal(mla_string_t, mla_array_list_get_unsafe(candidates, 1), mla_string("v5"), "Most recent entries should be kept");
+}
+
 inline void RegisterCliAppTests(mla_test_executor_t &p_TestExecutor) {
 
     mla_test_t test = mla_test("SimpleNavigation", test_category, SimpleNavigationTest);
@@ -679,6 +775,18 @@ inline void RegisterCliAppTests(mla_test_executor_t &p_TestExecutor) {
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("WindowsArrowKey", test_category, WindowsArrowKeyTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("LcpAutocomplete", test_category, LcpAutocompleteTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("BackspacePostAutocomplete", test_category, BackspacePostAutocompleteTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("CliHistoryPersistence", test_category, CliHistoryPersistenceTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("CliHistoryMaxPerKeyPruning", test_category, CliHistoryMaxPerKeyPruningTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
 }

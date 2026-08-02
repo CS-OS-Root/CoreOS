@@ -128,8 +128,18 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
             continue;
         }
 
+        if (matchingParamRef != nullptr) {
+            matchedPositon = paramNameEnd;
+        }
+
         if (paramNameEnd >= commandLength) {
-            isValueAutocompleteActive = false;
+            if (matchingParamRef != nullptr && matchingParamRef->value_autocomplete_fn != nullptr) {
+                activeParamForValueAutocomplete = paramName;
+                activeParamValuePrefix = mla_string_empty();
+                isValueAutocompleteActive = true;
+            } else {
+                isValueAutocompleteActive = false;
+            }
             break;
         }
 
@@ -290,7 +300,9 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
                 const mla_string_t *candidate = mla_array_list_get_ref(rawCompletions, i);
                 if (candidate != nullptr && mla_string_starts_with(*candidate, activeParamValuePrefix)) {
                     mla_string_t suffix = mla_string_substr(*candidate, prefixLen);
-                    mla_array_list_add(result.possibleAutoCompletions, suffix);
+                    if (mla_string_length(suffix) > 0) {
+                        mla_array_list_add(result.possibleAutoCompletions, suffix);
+                    }
                 }
             }
         }
@@ -311,8 +323,10 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
             }
 
             if (mla_string_starts_with(command_parameter->parameterName, paramName)) {
-                mla_array_list_add(result.possibleAutoCompletions,
-                                   mla_string_substr(command_parameter->parameterName, mla_string_length(paramName)));
+                mla_string_t suffix = mla_string_substr(command_parameter->parameterName, mla_string_length(paramName));
+                if (mla_string_length(suffix) > 0) {
+                    mla_array_list_add(result.possibleAutoCompletions, suffix);
+                }
             }
         }
     } else {
