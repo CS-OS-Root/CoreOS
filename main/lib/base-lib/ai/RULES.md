@@ -24,6 +24,7 @@ You are working in the `mla-core/main` repository, which contains the `mla-c` fr
    - The canonical location for AI skills is within the respective library repository under `lib/<module-name>/ai/skills/` (e.g. `lib/base-lib/ai/skills/`). The `.agents/skills/` directory is a working copy. Any modification, creation, or deletion of skills in `.agents/skills/` MUST also be mirrored to the corresponding library's `lib/<module-name>/ai/skills/` directory.
    - The root instruction files `AGENTS.md` and `GEMINI.md` are generated copies of `lib/<module-name>/ai/INTRO.md` and `lib/<module-name>/ai/RULES.md`. Any changes to rules or intro documentation MUST be made in `lib/<module-name>/ai/` and synced to `AGENTS.md` and `GEMINI.md`.
 10. **Include Placement**: All `#include` directives MUST be placed strictly at the top of source (`.cpp`) and header (`.h`) files, immediately following file headers/comments and header guards. **NEVER** place `#include` directives in the middle of a file, between functions, or inside functions/blocks.
+11. **Clean & Maintainable Code**: This project has a very long lifetime. Clean, readable, and maintainable code is of the utmost importance. Every piece of code written should be easy to understand, modify, and extend by future contributors. Avoid clever tricks or overly complex constructs in favor of clarity. Prefer explicit over implicit, and always consider the long-term maintainability of the code over short-term convenience.
 
 ## Code Style
 
