@@ -45,8 +45,17 @@ void mla_private_generic_free(mla_platform_pointer_t ptr) {
     free(ptr);
 }
 
+/**
+ * @brief Writes data bytes to stdout and flushes standard output stream immediately.
+ * @param format Pointer to character buffer.
+ * @param length Number of bytes to write.
+ * @return Number of bytes successfully written.
+ */
 mla_size_t mla_private_generic_print(const mla_char_t* format, mla_size_t length) {
-    return mla_s_cast<mla_size_t>(fwrite(format, 1, length, stdout));
+    mla_size_t written = mla_s_cast<mla_size_t>(fwrite(format, 1, length, stdout));
+    // Immediately flush stdout buffer so interactive prompts and live line edits render in real time
+    fflush(stdout);
+    return written;
 }
 
 mla_size_t mla_private_generic_std_read(mla_char_t* buffer, mla_size_t size) {
