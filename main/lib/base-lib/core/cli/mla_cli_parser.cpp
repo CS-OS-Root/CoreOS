@@ -128,21 +128,18 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
             continue;
         }
 
+        // If the parameter name ends right at the end of the input string without a space or '=',
+        // the user is still editing the parameter name. Do not activate parameter value autocomplete.
+        if (paramNameEnd >= commandLength) {
+            isValueAutocompleteActive = false;
+            break;
+        }
+
         if (matchingParamRef != nullptr) {
             matchedPositon = paramNameEnd;
         }
 
-        if (paramNameEnd >= commandLength) {
-            if (matchingParamRef != nullptr && matchingParamRef->value_autocomplete_fn != nullptr) {
-                activeParamForValueAutocomplete = paramName;
-                activeParamValuePrefix = mla_string_empty();
-                isValueAutocompleteActive = true;
-            } else {
-                isValueAutocompleteActive = false;
-            }
-            break;
-        }
-
+        // Parameter values require a space or '=' delimiter following the parameter name
         if (commandData[paramNameEnd] != ' ' && commandData[paramNameEnd] != '=') {
             isValueAutocompleteActive = false;
             break;

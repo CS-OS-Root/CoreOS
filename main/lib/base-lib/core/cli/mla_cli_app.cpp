@@ -418,6 +418,7 @@ mla_cli_app_t mla_cli_app_empty() {
         0,                  // cursorPos
         0,                  // escState
         0,                  // escParam
+        0,                  // lastDrawnLength
         mla_array_list_empty<mla_init_struct(mla_string_t)>(), // history
         -1,                 // historyIndex
         mla_string_empty()  // savedLiveLine
@@ -431,6 +432,7 @@ mla_cli_app_t mla_cli_app_init(mla_cli_module_t &rootModule, mla_stream_output_t
         0,                  // cursorPos
         0,                  // escState
         0,                  // escParam
+        0,                  // lastDrawnLength
         mla_array_list<mla_init_struct(mla_string_t)>(8), // history
         -1,                 // historyIndex
         mla_string_empty()  // savedLiveLine
@@ -489,11 +491,31 @@ mla_string_t mla_private_cli_char_to_string(mla_char_t c) {
 // Repaint the current line: return to column 0, clear the line, write the
 // prompt and the edited line, then reposition the cursor.
 void mla_private_cli_redraw_line(mla_cli_app_t &app, mla_stream_output_t &outputStream) {
+    // Ensure the cursor position stays within valid string bounds before redrawing
+    mla_size_t lineLength = mla_string_length(app.currentLine);
+    if (app.cursorPos > lineLength) {
+        app.cursorPos = lineLength;
+    }
+
+    // Return to column 0 and clear from cursor to end of line (ANSI CSI K)
     mla_private_cli_write_c_string(outputStream, "\r\x1b[K");
     mla_private_cli_write_string(outputStream, mla_private_cli_build_module_prompt(app));
     mla_private_cli_write_string(outputStream, app.currentLine);
 
-    mla_size_t lineLength = mla_string_length(app.currentLine);
+    // If the line shrank since the last render pass (e.g. after backspace),
+    // overwrite leftover character positions with space characters and move back.
+    // This ensures character erasure works on all terminals, including non-ANSI consoles.
+    if (app.lastDrawnLength > lineLength) {
+        mla_size_t extraSpaces = app.lastDrawnLength - lineLength;
+        for (mla_size_t i = 0; i < extraSpaces; ++i) {
+            mla_private_cli_write_c_string(outputStream, " ");
+        }
+        for (mla_size_t i = 0; i < extraSpaces; ++i) {
+            mla_private_cli_write_c_string(outputStream, "\b");
+        }
+    }
+    app.lastDrawnLength = lineLength;
+
     if (app.cursorPos < lineLength) {
         // Move the cursor left so it sits at cursorPos again
         mla_string_t moveLeft = mla_string_concat("\x1b[", mla_string_from_size(lineLength - app.cursorPos), "D");
@@ -501,28 +523,46 @@ void mla_private_cli_redraw_line(mla_cli_app_t &app, mla_stream_output_t &output
     }
 }
 
+// Insert a single character at the current cursor position within the edited line.
 void mla_private_cli_editor_insert_char(mla_cli_app_t &app, mla_char_t c) {
+    // Clamp cursor position to prevent out-of-bound string indexing
+    mla_size_t lineLength = mla_string_length(app.currentLine);
+    if (app.cursorPos > lineLength) {
+        app.cursorPos = lineLength;
+    }
     mla_string_t prefix = mla_string_substr(app.currentLine, 0, app.cursorPos);
     mla_string_t suffix = mla_string_substr(app.currentLine, app.cursorPos);
     app.currentLine = mla_string_concat(prefix, mla_private_cli_char_to_string(c), suffix);
     app.cursorPos++;
 }
 
+// Delete the character immediately preceding the cursor (Backspace).
 void mla_private_cli_editor_backspace(mla_cli_app_t &app) {
+    // Clamp cursor position to current line length before substring extraction
+    mla_size_t lineLength = mla_string_length(app.currentLine);
+    if (app.cursorPos > lineLength) {
+        app.cursorPos = lineLength;
+    }
     if (app.cursorPos == 0) {
         return;
     }
+    // Remove the character at (cursorPos - 1) and advance cursor left
     mla_string_t prefix = mla_string_substr(app.currentLine, 0, app.cursorPos - 1);
     mla_string_t suffix = mla_string_substr(app.currentLine, app.cursorPos);
     app.currentLine = mla_string_concat(prefix, suffix);
     app.cursorPos--;
 }
 
+// Delete the character directly at the cursor position (Delete).
 void mla_private_cli_editor_delete(mla_cli_app_t &app) {
     mla_size_t lineLength = mla_string_length(app.currentLine);
     if (app.cursorPos >= lineLength) {
+        if (app.cursorPos > lineLength) {
+            app.cursorPos = lineLength;
+        }
         return;
     }
+    // Remove the character under the cursor without changing cursorPos
     mla_string_t prefix = mla_string_substr(app.currentLine, 0, app.cursorPos);
     mla_string_t suffix = mla_string_substr(app.currentLine, app.cursorPos + 1);
     app.currentLine = mla_string_concat(prefix, suffix);
@@ -707,6 +747,7 @@ mla_bool_t mla_private_cli_commit_line(mla_cli_app_t &app, mla_stream_output_t &
     // safely inspect/modify the app state
     app.currentLine = mla_string_empty();
     app.cursorPos = 0;
+    app.lastDrawnLength = 0;
     app.historyIndex = -1;
     app.savedLiveLine = mla_string_empty();
 
@@ -776,6 +817,7 @@ mla_bool_t mla_private_cli_handle_normal_byte(mla_cli_app_t &app, mla_uint8_t b,
             mla_private_cli_write_c_string(outputStream, "^C\r\n");
             app.currentLine = mla_string_empty();
             app.cursorPos = 0;
+            app.lastDrawnLength = 0;
             app.historyIndex = -1;
             app.savedLiveLine = mla_string_empty();
             mla_private_cli_write_module_prompt(app, outputStream);

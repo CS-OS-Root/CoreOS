@@ -578,6 +578,45 @@ inline void LineEditingTest() {
     // End moves the cursor to the end of the line
     FeedCliInput(app, output, mla_string("\x1b[F"));
     assert_equal(app.cursorPos, (mla_size_t)2, "End should move the cursor to the end");
+
+    // Clear line via Ctrl-C
+    FeedCliInput(app, output, mla_string("\x03"));
+    assert_equal(mla_string_length(app.currentLine), (mla_size_t)0, "Line should be cleared");
+
+    // Single character typing and backspace deletion ('s' -> backspace -> empty)
+    FeedCliInput(app, output, mla_string("s"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("s"), "Single character 's' should be inserted");
+    assert_equal(app.cursorPos, (mla_size_t)1, "Cursor should be 1 after typing 's'");
+
+    FeedCliInput(app, output, mla_string("\x7f"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string(""), "Backspace should clear single character 's'");
+    assert_equal(app.cursorPos, (mla_size_t)0, "Cursor should return to 0 after deleting 's'");
+
+    // Test Ctrl-H / BS (0x08) deletion on single character
+    FeedCliInput(app, output, mla_string("s"));
+    FeedCliInput(app, output, mla_string("\x08"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string(""), "BS (0x08) should clear single character 's'");
+    assert_equal(app.cursorPos, (mla_size_t)0, "Cursor should return to 0");
+
+    // Multi-character typing and step-by-step backspace deletion ("ab" -> "a" -> "")
+    FeedCliInput(app, output, mla_string("ab"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("ab"), "Two characters 'ab' should be inserted");
+    assert_equal(app.cursorPos, (mla_size_t)2, "Cursor should be 2 after typing 'ab'");
+
+    FeedCliInput(app, output, mla_string("\x7f"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("a"), "First backspace on 'ab' should leave 'a'");
+    assert_equal(app.cursorPos, (mla_size_t)1, "Cursor should move to 1");
+
+    FeedCliInput(app, output, mla_string("\x7f"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string(""), "Second backspace on 'ab' should clear line");
+    assert_equal(app.cursorPos, (mla_size_t)0, "Cursor should return to 0");
+
+    // Multiple backspaces sent in a single input buffer ("xyz" + "\x7f\x7f\x7f")
+    FeedCliInput(app, output, mla_string("xyz"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("xyz"), "Three characters 'xyz' inserted");
+    FeedCliInput(app, output, mla_string("\x7f\x7f\x7f"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string(""), "Piped triple backspace should clear 'xyz'");
+    assert_equal(app.cursorPos, (mla_size_t)0, "Cursor should return to 0");
 }
 
 inline void AutocompleteTest() {
@@ -696,6 +735,7 @@ inline void CliHistoryPersistenceTest() {
 
     mla_cli_history_record_value(store, key, val1);
     mla_cli_history_record_value(store, key, val2);
+    mla_cli_history_save_to_file(store, mla_string_const("/.cli_history.json"));
 
     mla_cli_history_store_t loadedStore = mla_cli_history_store_init(10);
     mla_bool_t loaded = mla_cli_history_load_from_file(loadedStore, mla_string_const("/.cli_history.json"), 10);
@@ -716,6 +756,7 @@ inline void CliHistoryMaxPerKeyPruningTest() {
     mla_cli_history_record_value(store, key, mla_string_const("v5"));
 
     assert_equal(mla_array_list_size(store.entries), (mla_size_t)5, "Store should hold 5 entries initially");
+    mla_cli_history_save_to_file(store, mla_string_const("/.cli_history.json"));
 
     // Load with max_per_key = 2 into new store
     mla_cli_history_store_t prunedStore = mla_cli_history_store_init(10);
