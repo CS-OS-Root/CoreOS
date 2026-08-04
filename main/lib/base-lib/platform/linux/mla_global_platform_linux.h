@@ -66,12 +66,25 @@ mla_uint64_t mla_private_linux_system_time_ms() {
 
 }
 
+/**
+ * @brief Reads available raw input bytes from standard input without blocking.
+ *
+ * Configures the terminal interface into non-canonical, non-echoing mode, sets
+ * STDIN_FILENO to non-blocking, and reads available bytes directly via POSIX read()
+ * to prevent stdio ferror/EOF lockups on non-blocking reads.
+ *
+ * @param buffer Output buffer to receive raw input characters.
+ * @param size Maximum size of the output buffer (including null terminator).
+ * @return Number of characters read into buffer.
+ */
 mla_size_t mla_private_linux_std_read(mla_char_t* buffer, mla_size_t size) {
+    if (buffer == nullptr || size <= 1) {
+        return 0;
+    }
+
     struct termios oldt;
     struct termios newt;
     int oldf;
-    mla_size_t count = 0;
-    int ch;
 
     // Save terminal settings
     tcgetattr(STDIN_FILENO, &oldt);
@@ -88,16 +101,22 @@ mla_size_t mla_private_linux_std_read(mla_char_t* buffer, mla_size_t size) {
     oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
     fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
 
-    // Read whatever is currently available without blocking
-    while (count < size - 1) {
-        ch = getchar();
-        if (ch == EOF) { break; }
-        buffer[count++] = mla_s_cast<mla_char_t>(ch);
+    // Clear any stdio error or EOF flags on stdin stream before reading
+    clearerr(stdin);
+
+    // Read available bytes directly from file descriptor 0 (STDIN_FILENO) using
+    // POSIX read(). This avoids glibc stdio internal FILE* error flag sticky states.
+    ssize_t bytes_read = read(STDIN_FILENO, buffer, size - 1);
+    mla_size_t count = 0;
+
+    if (bytes_read > 0) {
+        count = mla_s_cast<mla_size_t>(bytes_read);
     }
 
     buffer[count] = '\0';
 
-    // Restore terminal and flags
+    // Clear stdio error state again and restore terminal settings and flags
+    clearerr(stdin);
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     fcntl(STDIN_FILENO, F_SETFL, oldf);
 
