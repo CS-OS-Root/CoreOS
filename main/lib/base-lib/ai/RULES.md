@@ -16,6 +16,7 @@ You are working in the `mla-core/main` repository, which contains the `mla-c` fr
 6. **DOCUMENTATION**: 
     - Write clear and concise documentation for all public APIs and data structures.
     - Use Doxygen-style comments for code documentation.
+    - Provide clear, descriptive inline comments explaining each non-trivial step, configuration parsing loop, or process invocation to ensure long-term readability and maintainability.
     - Ensure documentation is up-to-date and accurate.
     - Document the dataflow methodically.
 7. **Struct Encapsulation**: Never access struct fields directly in consumer code when access methods exist. Always use the framework API getters/setters (for example, TLS config access methods instead of direct `tls.certificate = ...` writes).
