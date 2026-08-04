@@ -32,6 +32,7 @@ You are working in the `mla-core/main` repository, which contains the `mla-c` fr
 2. **No Static Functions in CPP Files**: Do not use `static` functions or helper methods in `.cpp` files as they are unnecessary. Use `mla_private_` prefix naming instead:
    - **Incorrect**: `static mla_external_task_t mla_private_external_task_create_internal(...)`
    - **Correct**: `mla_external_task_t mla_private_external_task_create_internal(...)`
+3. **Avoid Deeply Nested Control Flow**: Do not write multi-level deeply nested `if` blocks. Use guard clauses, early `continue` or `break` statements in loops, or extract complex block logic into separate helper functions to keep code flat, clean, and maintainable.
 
 ## Detailed Instructions / Skills
 Detailed instructions about framework modules (array lists, strings, memory, networking, tests, etc.) are available as skills.
