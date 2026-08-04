@@ -66,12 +66,67 @@ mla_uint64_t mla_private_linux_system_time_ms() {
 
 }
 
+inline struct termios& mla_private_linux_get_orig_termios() {
+    static struct termios s_orig;
+    return s_orig;
+}
+
+inline int& mla_private_linux_get_orig_flags() {
+    static int s_flags = 0;
+    return s_flags;
+}
+
+inline bool& mla_private_linux_get_raw_mode_active() {
+    static bool s_active = false;
+    return s_active;
+}
+
+/**
+ * @brief Restores original terminal termios settings and file descriptor flags upon program exit.
+ */
+inline void mla_private_linux_restore_terminal() {
+    if (mla_private_linux_get_raw_mode_active()) {
+        tcsetattr(STDIN_FILENO, TCSANOW, &mla_private_linux_get_orig_termios());
+        fcntl(STDIN_FILENO, F_SETFL, mla_private_linux_get_orig_flags());
+        mla_private_linux_get_raw_mode_active() = false;
+    }
+}
+
+/**
+ * @brief Enables raw non-canonical, non-echoing, non-blocking mode on STDIN_FILENO for real-time CLI keypress processing.
+ */
+inline void mla_private_linux_enable_raw_mode() {
+    if (mla_private_linux_get_raw_mode_active()) {
+        return;
+    }
+
+    if (isatty(STDIN_FILENO) != 0) {
+        // Save original termios attributes and fcntl flags before switching to raw mode
+        tcgetattr(STDIN_FILENO, &mla_private_linux_get_orig_termios());
+        mla_private_linux_get_orig_flags() = fcntl(STDIN_FILENO, F_GETFL, 0);
+
+        struct termios raw = mla_private_linux_get_orig_termios();
+        // Disable canonical line discipline (ICANON) and local echo (ECHO)
+        raw.c_lflag &= ~(ICANON | ECHO);
+        raw.c_cc[VMIN] = 0;
+        raw.c_cc[VTIME] = 0;
+
+        tcsetattr(STDIN_FILENO, TCSANOW, &raw);
+        fcntl(STDIN_FILENO, F_SETFL, mla_private_linux_get_orig_flags() | O_NONBLOCK);
+
+        mla_private_linux_get_raw_mode_active() = true;
+
+        // Register atexit handler to restore clean terminal settings when the application terminates
+        atexit(mla_private_linux_restore_terminal);
+    }
+}
+
 /**
  * @brief Reads available raw input bytes from standard input without blocking.
  *
- * Configures the terminal interface into non-canonical, non-echoing mode, sets
- * STDIN_FILENO to non-blocking, and reads available bytes directly via POSIX read()
- * to prevent stdio ferror/EOF lockups on non-blocking reads.
+ * Maintains the terminal in non-canonical, non-echoing mode, reads available bytes
+ * directly via POSIX read() without blocking, and delivers raw keypresses (Tab,
+ * Backspace, Arrow keys) in real time to the CLI line editor.
  *
  * @param buffer Output buffer to receive raw input characters.
  * @param size Maximum size of the output buffer (including null terminator).
@@ -82,30 +137,14 @@ mla_size_t mla_private_linux_std_read(mla_char_t* buffer, mla_size_t size) {
         return 0;
     }
 
-    struct termios oldt;
-    struct termios newt;
-    int oldf;
-
-    // Save terminal settings
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-
-    // Disable canonical mode and echo. This is a raw byte pump: it does NOT echo
-    // or translate anything. Line editing (echo, cursor movement, history,
-    // autocomplete) is handled by the CLI line editor in mla_cli_app.cpp, which
-    // needs to see every raw byte - including escape sequences for arrow keys.
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-
-    // Make stdin non-blocking
-    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+    // Enable raw non-blocking terminal mode once so keypresses (Tab, Backspace, arrows)
+    // are passed directly to read() without being buffered by Linux canonical tty line discipline
+    mla_private_linux_enable_raw_mode();
 
     // Clear any stdio error or EOF flags on stdin stream before reading
     clearerr(stdin);
 
-    // Read available bytes directly from file descriptor 0 (STDIN_FILENO) using
-    // POSIX read(). This avoids glibc stdio internal FILE* error flag sticky states.
+    // Read available bytes directly from STDIN_FILENO using POSIX read()
     ssize_t bytes_read = read(STDIN_FILENO, buffer, size - 1);
     mla_size_t count = 0;
 
@@ -114,11 +153,7 @@ mla_size_t mla_private_linux_std_read(mla_char_t* buffer, mla_size_t size) {
     }
 
     buffer[count] = '\0';
-
-    // Clear stdio error state again and restore terminal settings and flags
     clearerr(stdin);
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    fcntl(STDIN_FILENO, F_SETFL, oldf);
 
     return count;
 }
