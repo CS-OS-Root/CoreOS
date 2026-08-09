@@ -59,6 +59,7 @@ set(SOURCE_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/ui/surfaces/mla_ui_surface_draw.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/ui/controls/mla_ui_control_surface.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/ui/surfaces/mla_ui_surface.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/update/mla_update.cpp
 )
 
 # Network source files

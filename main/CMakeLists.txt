@@ -74,6 +74,7 @@ if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
             ${SOURCE_NETWORK_FILES}
             ${SOURCE_UI_FILES}
             ${SOURCE_FILE_SYSTEM_FILES}
+            ${SOURCE_EXTERNAL_TASK_FILES}
     )
     add_executable(MLA_C_App_Linux ${SOURCE_FILES_LINUX_APP})
     target_link_libraries(MLA_C_App_Linux PRIVATE ${CMAKE_DL_LIBS})
@@ -106,6 +107,7 @@ if (MLA_EMSDK_PATH AND NOT MLA_WASM_STANDALONE)
             ${SOURCE_FILES}
             ${SOURCE_NETWORK_FILES}
             ${SOURCE_UI_FILES}
+            ${SOURCE_FILE_SYSTEM_FILES}
     )
     add_executable(MLA_C_App_WASM ${SOURCE_FILES_WASM_APP})
     target_link_libraries(MLA_C_App_WASM)
@@ -186,6 +188,8 @@ if(WIN32)
             ${SOURCE_FILES}
             ${SOURCE_NETWORK_FILES}
             ${SOURCE_UI_FILES}
+            ${SOURCE_FILE_SYSTEM_FILES}
+            ${SOURCE_EXTERNAL_TASK_FILES}
     )
     add_executable(MLA_C_App_Windows ${SOURCE_FILES_WINDOWS_APP})
     mla_enable_clang_tidy(MLA_C_App_Windows)

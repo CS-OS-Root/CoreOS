@@ -160,6 +160,7 @@ for config in "${BUILD_CONFIGS[@]}"; do
           -DCMAKE_C_COMPILER="$eval_c_compiler" \
           -DCMAKE_CXX_COMPILER="$eval_cxx_compiler" \
           -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_CXX_FLAGS="-DMLA_APP_VERSION=\\\"${specified_version:-0.0.1}\\\"" \
           $extra_flags \
           -S "$WORKSPACE_DIR" \
           -B "$build_dir"
