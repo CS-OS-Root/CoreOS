@@ -111,10 +111,12 @@ foreach ($config in $global:BUILD_CONFIGS) {
         $generatorFlags += "-G", "Ninja"
     }
 
+    $relVer = if ($specifiedVersion) { $specifiedVersion } else { "0.0.1" }
     $cmakeArgs = @(
         "-DCMAKE_C_COMPILER=$cCompiler",
         "-DCMAKE_CXX_COMPILER=$cxxCompiler",
-        "-DCMAKE_BUILD_TYPE=Release"
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_CXX_FLAGS=-DMLA_APP_VERSION=\`"$relVer\`""
     ) + $generatorFlags
 
     if ($extraFlags) {

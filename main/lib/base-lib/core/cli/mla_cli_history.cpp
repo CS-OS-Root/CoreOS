@@ -75,6 +75,11 @@ mla_array_list_t<mla_init_struct(mla_string_t)> mla_cli_history_get_candidates(c
 }
 
 mla_bool_t mla_cli_history_save_to_file(const mla_cli_history_store_t &store, const mla_string_t &vfs_file_path) {
+#if (defined(mla_test_disable_file_system) && mla_test_disable_file_system == 1) || defined(MLA_WASM_STANDALONE)
+    (void)store;
+    (void)vfs_file_path;
+    return false;
+#else
     mla_file_system_stream_t fileStream = mla_file_system_stream_empty();
     if (!mla_fs_open_file(vfs_file_path, MLA_FILE_SYSTEM_FILE_OPEN_MODE_WRITE, fileStream)) {
         return false;
@@ -83,9 +88,16 @@ mla_bool_t mla_cli_history_save_to_file(const mla_cli_history_store_t &store, co
     mla_stream_output_t output = mla_file_system_stream_as_output(fileStream);
     mla_serializer_t serializer = mla_json_serializer(output);
     return mla_serializer_write_data_struct(serializer, store);
+#endif
 }
 
 mla_bool_t mla_cli_history_load_from_file(mla_cli_history_store_t &store, const mla_string_t &vfs_file_path, mla_size_t max_per_key) {
+#if (defined(mla_test_disable_file_system) && mla_test_disable_file_system == 1) || defined(MLA_WASM_STANDALONE)
+    (void)store;
+    (void)vfs_file_path;
+    (void)max_per_key;
+    return false;
+#else
     mla_file_system_stream_t fileStream = mla_file_system_stream_empty();
     if (!mla_fs_open_file(vfs_file_path, MLA_FILE_SYSTEM_FILE_OPEN_MODE_READ, fileStream)) {
         store.max_entries_per_key = max_per_key;
@@ -120,4 +132,5 @@ mla_bool_t mla_cli_history_load_from_file(mla_cli_history_store_t &store, const 
     }
 
     return result;
+#endif
 }
