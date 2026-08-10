@@ -203,6 +203,8 @@ _codeql_detected_source_root
 # Remove the old core-os-web-ui directory if it exists
 core-os-web-ui/
 
+build/
+/build/
 release/
 /release/
 
