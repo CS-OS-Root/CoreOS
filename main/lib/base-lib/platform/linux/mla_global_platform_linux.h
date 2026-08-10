@@ -8,6 +8,8 @@
 #include "../../core/mla_data_types.h"
 #include "../generic/mla_global_platform_generic.h"
 #include "../../core/lifecycle/mla_lifecycle_events.h"
+#include "mla_global_update_linux.h"
+
 
 #include <unistd.h>
 #include <time.h>
