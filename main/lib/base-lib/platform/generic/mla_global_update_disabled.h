@@ -12,17 +12,14 @@ inline mla_update_error_t mla_private_update_disabled_upgrade_to_version(mla_str
     return MLA_UPDATE_ERROR_NOT_SUPPORTED;
 }
 
-inline mla_bool_t mla_private_update_disabled_check_and_apply_pending_update(int argc, char** argv) {
+inline mla_bool_t mla_update_check_and_apply_pending_update(int argc, char** argv) {
     (void)argc;
     (void)argv;
     return false;
 }
 
-#if !defined(UNIX) && !defined(WIN32)
 mla_update_management_t g_update_management = {
-    mla_private_update_disabled_upgrade_to_version,
-    mla_private_update_disabled_check_and_apply_pending_update
+    mla_private_update_disabled_upgrade_to_version
 };
-#endif
 
 #endif // MLA_GLOBAL_UPDATE_DISABLED_H

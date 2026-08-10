@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <time.h>
 #include "../generic/mla_global_platform_generic.h"
+#include "../generic/mla_global_update_disabled.h"
 #include "../../core/lifecycle/mla_lifecycle_events.h"
 
 

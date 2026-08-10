@@ -12,8 +12,6 @@
 #include "../../lib/base-lib/core/http/mla_http_server.h"
 #endif
 
-static const mla_char_t* update_test_category = "Update";
-
 inline void UpdateGetCurrentVersionTest() {
     mla_string_t version = mla_update_get_current_version();
     assert_true(mla_string_length(version) > 0, "Current version should not be empty");
@@ -127,21 +125,21 @@ inline void UpdateGetLastVersionHttpTest() {
 #endif
 
 inline void RegisterUpdateTests(mla_test_executor_t& p_TestExecutor) {
-    mla_test_t test = mla_test("UpdateGetCurrentVersion", update_test_category, UpdateGetCurrentVersionTest);
+    mla_test_t test = mla_test("UpdateGetCurrentVersion", test_category, UpdateGetCurrentVersionTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
-    test = mla_test("UpdateGetLastVersionMock", update_test_category, UpdateGetLastVersionMockTest);
+    test = mla_test("UpdateGetLastVersionMock", test_category, UpdateGetLastVersionMockTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
-    test = mla_test("UpdateUpgradeInvalidStream", update_test_category, UpdateUpgradeInvalidStreamTest);
+    test = mla_test("UpdateUpgradeInvalidStream", test_category, UpdateUpgradeInvalidStreamTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
-    test = mla_test("UpdateCheckAndApplyNoFlags", update_test_category, UpdateCheckAndApplyNoFlagsTest);
+    test = mla_test("UpdateCheckAndApplyNoFlags", test_category, UpdateCheckAndApplyNoFlagsTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
 #if !defined mla_test_disable_network || mla_test_disable_network != 1
     if (mla_is_native_multi_tasking) {
-        test = mla_test("UpdateGetLastVersionHttp", update_test_category, UpdateGetLastVersionHttpTest);
+        test = mla_test("UpdateGetLastVersionHttp", test_category, UpdateGetLastVersionHttpTest);
         mla_test_executor_register_test(p_TestExecutor, test);
     }
 #endif

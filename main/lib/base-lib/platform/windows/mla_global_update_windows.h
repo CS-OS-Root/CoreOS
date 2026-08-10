@@ -25,7 +25,7 @@ inline mla_update_error_t mla_private_update_windows_upgrade_to_version(mla_stre
     char temp_dir[MAX_PATH];
     DWORD temp_len = GetTempPathA(MAX_PATH, temp_dir);
     if (temp_len == 0) {
-        return MLA_UPDATE_ERROR_TEMP_FILE_FAILED;
+        return MLA_UPDATE_ERROR_WRITE_FAILED;
     }
     mla_string_t temp_binary_path = mla_fs_combine_paths(mla_string(temp_dir), mla_string_const("mla_update_app_tmp.exe"));
 
@@ -49,7 +49,7 @@ inline mla_update_error_t mla_private_update_windows_upgrade_to_version(mla_stre
     return MLA_UPDATE_SUCCESS;
 }
 
-inline mla_bool_t mla_private_update_windows_check_and_apply_pending_update(int argc, char** argv) {
+inline mla_bool_t mla_update_check_and_apply_pending_update(int argc, char** argv) {
     if (argc < 3 || argv == nullptr) {
         return false;
     }
@@ -91,11 +91,8 @@ inline mla_bool_t mla_private_update_windows_check_and_apply_pending_update(int 
     return true;
 }
 
-#if defined(WIN32)
 mla_update_management_t g_update_management = {
-    mla_private_update_windows_upgrade_to_version,
-    mla_private_update_windows_check_and_apply_pending_update
+    mla_private_update_windows_upgrade_to_version
 };
-#endif
 
 #endif // MLA_GLOBAL_UPDATE_WINDOWS_H

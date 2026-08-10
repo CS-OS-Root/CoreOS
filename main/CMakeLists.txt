@@ -76,6 +76,7 @@ if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
             ${SOURCE_NETWORK_FILES}
             ${SOURCE_UI_FILES}
             ${SOURCE_FILE_SYSTEM_FILES}
+            ${SOURCE_EXTERNAL_TASK_FILES}
             ${SOURCE_UPDATE_FILES}
     )
     add_executable(MLA_C_App_Linux ${SOURCE_FILES_LINUX_APP})
@@ -198,6 +199,7 @@ if(WIN32)
             ${SOURCE_NETWORK_FILES}
             ${SOURCE_UI_FILES}
             ${SOURCE_FILE_SYSTEM_FILES}
+            ${SOURCE_EXTERNAL_TASK_FILES}
             ${SOURCE_UPDATE_FILES}
     )
     add_executable(MLA_C_App_Windows ${SOURCE_FILES_WINDOWS_APP})

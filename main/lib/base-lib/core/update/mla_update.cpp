@@ -46,13 +46,6 @@ mla_update_error_t mla_update_upgrade_to_version(mla_stream_input_t& p_BinaryStr
     return g_update_management.upgrade_to_version(p_BinaryStream);
 }
 
-mla_bool_t mla_update_check_and_apply_pending_update(int argc, char** argv) {
-    if (g_update_management.check_and_apply_pending_update == nullptr) {
-        return false;
-    }
-    return g_update_management.check_and_apply_pending_update(argc, argv);
-}
-
 mla_bool_t mla_private_update_http_get_last_version(const mla_update_provider_t& p_Provider, mla_string_t& p_OutVersion) {
     mla_string_t base_url = mla_user_data_get_string(p_Provider.user_data, mla_update_provider_url_id);
     if (mla_string_length(base_url) == 0) {

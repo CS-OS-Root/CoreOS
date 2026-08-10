@@ -53,7 +53,7 @@ inline mla_update_error_t mla_private_update_linux_upgrade_to_version(mla_stream
     return MLA_UPDATE_SUCCESS;
 }
 
-inline mla_bool_t mla_private_update_linux_check_and_apply_pending_update(int argc, char** argv) {
+inline mla_bool_t mla_update_check_and_apply_pending_update(int argc, char** argv) {
     if (argc < 3 || argv == nullptr) {
         return false;
     }
@@ -102,11 +102,8 @@ inline mla_bool_t mla_private_update_linux_check_and_apply_pending_update(int ar
     return true;
 }
 
-#if defined(UNIX) && !defined(EMSCRIPTEN) && !defined(APPLE)
 mla_update_management_t g_update_management = {
-    mla_private_update_linux_upgrade_to_version,
-    mla_private_update_linux_check_and_apply_pending_update
+    mla_private_update_linux_upgrade_to_version
 };
-#endif
 
 #endif // MLA_GLOBAL_UPDATE_LINUX_H

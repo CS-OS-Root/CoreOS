@@ -12,7 +12,6 @@
 #include <cstdlib>
 
 #include "../../core/mla_data_types.h"
-#include "mla_global_update_disabled.h"
 
 
 mla_platform_pointer_t mla_private_generic_memcpy(mla_platform_pointer_t dest, mla_platform_const_pointer_t src, mla_size_t size) {

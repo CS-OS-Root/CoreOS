@@ -29,9 +29,18 @@ When creating test files for this project, follow these conventions:
 
 ### Test Registration Function
 
-- Create a Register[Module]Tests(mla_test_executor_t &p_TestExecutor) function
-- Use mla_test() to create test objects with: name, test_category, and test function
-- Register each test with mla_test_executor_register_test(p_TestExecutor, test)
+- Create a `Register[Module]Tests(mla_test_executor_t &p_TestExecutor)` function
+- Use `mla_test("TestName", test_category, TestFunction)` to create test objects
+- **IMPORTANT**: Always use the framework's pre-defined `test_category` macro (which automatically expands to `mla_test_filename_only`). **NEVER** declare a custom `static const mla_char_t*` or string variable for test category names.
+- Register each test with `mla_test_executor_register_test(p_TestExecutor, test)`
+
+Example:
+```cpp
+inline void RegisterMyModuleTests(mla_test_executor_t &p_TestExecutor) {
+    mla_test_t test = mla_test("MyFeature", test_category, MyFeatureTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+}
+```
 
 ### Available Assertions
 
