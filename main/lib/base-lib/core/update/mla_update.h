@@ -92,12 +92,39 @@ mla_update_provider_t mla_update_get_provider();
  */
 mla_update_error_t mla_update_upgrade_to_version(mla_stream_input_t& p_BinaryStream);
 
+extern const mla_user_data_id mla_update_provider_url_id;
+extern const mla_user_data_id mla_update_provider_module_id;
+extern const mla_user_data_id mla_update_provider_platform_id;
+extern const mla_user_data_id mla_update_provider_compiler_id;
+
 /**
- * @brief Factory helper creating an HTTP-based update provider struct.
+ * @brief Returns the current platform identifier string (e.g., "linux_x86_64", "windows64", "wasm").
  *
- * @param p_BaseUrl The base URL of the HTTP update server (e.g., "http://localhost:8080").
+ * @return mla_string_t current platform string.
+ */
+mla_string_t mla_update_get_current_platform();
+
+/**
+ * @brief Returns the current compiler identifier string (e.g., "gcc", "clang", "filc", "zig_native", "emscripten_std", "emscripten_js", "zig_wasm", "msvc").
+ *
+ * @return mla_string_t current compiler string.
+ */
+mla_string_t mla_update_get_current_compiler();
+
+/**
+ * @brief Factory helper creating an HTTP-based update provider struct matching release server endpoints.
+ *
+ * @param p_Module The module/product name (e.g., "mla-core"). Required.
+ * @param p_BaseUrl The base URL of the HTTP release server (defaults to "https://releases.home.schlegel.ovh").
+ * @param p_Platform Target platform identifier (defaults to current platform via mla_update_get_current_platform()).
+ * @param p_Compiler Target compiler identifier (defaults to current compiler via mla_update_get_current_compiler()).
  * @return mla_update_provider_t configured HTTP update provider.
  */
-mla_update_provider_t mla_update_provider_http_create(const mla_string_t& p_BaseUrl);
+mla_update_provider_t mla_update_provider_http_create(
+    const mla_string_t& p_Module,
+    const mla_string_t& p_BaseUrl = mla_string_const("https://releases.home.schlegel.ovh"),
+    const mla_string_t& p_Platform = mla_update_get_current_platform(),
+    const mla_string_t& p_Compiler = mla_update_get_current_compiler()
+);
 
 #endif // MLA_UPDATE_H

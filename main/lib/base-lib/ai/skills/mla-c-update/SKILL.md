@@ -80,7 +80,7 @@ mla_string_t version = mla_update_get_current_version();
 ### 2. Check for Remote Updates (HTTP Provider)
 
 ```cpp
-mla_update_provider_t http_provider = mla_update_provider_http_create(mla_string_const("http://updates.example.com"));
+mla_update_provider_t http_provider = mla_update_provider_http_create(mla_string_const("mla-core"), mla_string_const("https://releases.home.schlegel.ovh"));
 mla_update_set_provider(http_provider);
 
 mla_string_t latest_version = mla_string_empty();

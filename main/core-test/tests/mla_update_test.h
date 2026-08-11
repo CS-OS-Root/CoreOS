@@ -68,6 +68,18 @@ inline void UpdateCheckAndApplyNoFlagsTest() {
     assert_false(res, "Check and apply should return false when update flag is absent");
 }
 
+inline void UpdateGetPlatformCompilerTest() {
+    mla_string_t platform = mla_update_get_current_platform();
+    assert_true(mla_string_length(platform) > 0, "Current platform should not be empty");
+
+    mla_string_t compiler = mla_update_get_current_compiler();
+    assert_true(mla_string_length(compiler) > 0, "Current compiler should not be empty");
+
+    mla_update_provider_t provider = mla_update_provider_http_create(mla_string_const("test_module"));
+    mla_string_t base_url = mla_user_data_get_string(provider.user_data, mla_update_provider_url_id);
+    assert_true(mla_string_equals(base_url, mla_string_const("https://releases.home.schlegel.ovh")), "Default base URL should match schlegel release server");
+}
+
 #if !defined mla_test_disable_network || mla_test_disable_network != 1
 inline mla_bool_t update_test_http_version_handler(mla_http_server_t& http_server, const mla_user_data_t &userdata, const mla_http_request_t &request, mla_http_response_t &response) {
     (void)http_server;
@@ -104,7 +116,7 @@ inline void UpdateGetLastVersionHttpTest() {
     mla_http_server_set_timeout(server, 2000);
 
     if (mla_http_server_start(server, 2)) {
-        mla_update_provider_t provider = mla_update_provider_http_create(mla_string_const("http://127.0.0.1:41259"));
+        mla_update_provider_t provider = mla_update_provider_http_create(mla_string_const("test_app"), mla_string_const("http://127.0.0.1:41259"));
         mla_string_t version = mla_string_empty();
         mla_bool_t success = mla_update_get_last_version(provider, version);
         assert_true(success, "HTTP get_last_version should succeed");
@@ -126,6 +138,9 @@ inline void UpdateGetLastVersionHttpTest() {
 
 inline void RegisterUpdateTests(mla_test_executor_t& p_TestExecutor) {
     mla_test_t test = mla_test("UpdateGetCurrentVersion", test_category, UpdateGetCurrentVersionTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("UpdateGetPlatformCompiler", test_category, UpdateGetPlatformCompilerTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("UpdateGetLastVersionMock", test_category, UpdateGetLastVersionMockTest);
