@@ -9,6 +9,7 @@
 
 #include "../../core/mla_data_types.h"
 #include "../../core/lifecycle/mla_lifecycle_events.h"
+#include "../generic/mla_global_update_disabled.h"
 
 // Declare external functions which must be provided by the wasm host
 extern "C" {

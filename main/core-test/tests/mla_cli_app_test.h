@@ -824,12 +824,13 @@ inline void RegisterCliAppTests(mla_test_executor_t &p_TestExecutor) {
     test = mla_test("BackspacePostAutocomplete", test_category, BackspacePostAutocompleteTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
+#if !defined mla_test_disable_file_system || mla_test_disable_file_system != 1
     test = mla_test("CliHistoryPersistence", test_category, CliHistoryPersistenceTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("CliHistoryMaxPerKeyPruning", test_category, CliHistoryMaxPerKeyPruningTest);
     mla_test_executor_register_test(p_TestExecutor, test);
-
+#endif
 }
 
 #endif

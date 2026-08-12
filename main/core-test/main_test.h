@@ -44,6 +44,11 @@
 #include "tests/mla_user_data_test.h"
 #include "tests/mla_area_memory_test.h"
 
+#if !defined mla_test_disable_update || mla_test_disable_update != 1
+#include "tests/mla_update_test.h"
+#include "tests/mla_update_cli_module_test.h"
+#endif
+
 #if !defined mla_test_disable_external_task || mla_test_disable_external_task != 1
 #include "tests/mla_external_task_test.h"
 #endif
@@ -108,6 +113,11 @@ int run(mla_test_bool_t runTest, mla_test_bool_t runBenchmark, mla_test_output_f
     RegisterReflectionRpcTests(l_TestExecutor);
     RegisterMathUtilsTests(l_TestExecutor);
     RegisterUserDataTests(l_TestExecutor);
+
+#if !defined mla_test_disable_update || mla_test_disable_update != 1
+    RegisterUpdateTests(l_TestExecutor);
+    RegisterUpdateCliModuleTests(l_TestExecutor);
+#endif
 
 #if !defined mla_test_disable_external_task || mla_test_disable_external_task != 1
     RegisterExternalTaskTests(l_TestExecutor);

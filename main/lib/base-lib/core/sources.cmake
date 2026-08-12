@@ -94,3 +94,12 @@ set(SOURCE_FILE_SYSTEM_FILES
 set(SOURCE_UI_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/ui/display/mla_ui_display_surface.cpp
 )
+
+# Auto update source files
+set(SOURCE_UPDATE_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/update/mla_update.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/update/mla_update_http_provider.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/update/mla_update_cli_module.cpp
+)
+
+
