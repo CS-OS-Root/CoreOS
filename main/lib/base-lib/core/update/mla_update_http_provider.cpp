@@ -8,10 +8,10 @@
 #include "../http/mla_http_response.h"
 #include "../system/mla_string_concat.h"
 
-const mla_user_data_id mla_update_provider_url_id = mla_get_next_user_data_id();
-const mla_user_data_id mla_update_provider_module_id = mla_get_next_user_data_id();
-const mla_user_data_id mla_update_provider_platform_id = mla_get_next_user_data_id();
-const mla_user_data_id mla_update_provider_compiler_id = mla_get_next_user_data_id();
+mla_user_data_id_init(mla_update_provider_url_id)
+mla_user_data_id_init(mla_update_provider_module_id)
+mla_user_data_id_init(mla_update_provider_platform_id)
+mla_user_data_id_init(mla_update_provider_compiler_id)
 
 mla_string_t mla_update_get_current_platform() {
 #ifdef MLA_PLATFORM_NAME

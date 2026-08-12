@@ -76,8 +76,8 @@ inline void UpdateGetPlatformCompilerTest() {
     assert_true(mla_string_length(compiler) > 0, "Current compiler should not be empty");
 
     mla_update_provider_t provider = mla_update_provider_http_create(mla_string_const("test_module"));
-    mla_string_t base_url = mla_user_data_get_string(provider.user_data, mla_update_provider_url_id);
-    assert_true(mla_string_equals(base_url, mla_string_const("https://releases.home.schlegel.ovh")), "Default base URL should match schlegel release server");
+    assert_true(provider.get_last_version != nullptr, "Provider get_last_version function pointer should be set");
+    assert_true(provider.get_binary_content != nullptr, "Provider get_binary_content function pointer should be set");
 }
 
 #if !defined mla_test_disable_network || mla_test_disable_network != 1

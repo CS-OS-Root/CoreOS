@@ -92,11 +92,6 @@ mla_update_provider_t mla_update_get_provider();
  */
 mla_update_error_t mla_update_upgrade_to_version(mla_stream_input_t& p_BinaryStream);
 
-extern const mla_user_data_id mla_update_provider_url_id;
-extern const mla_user_data_id mla_update_provider_module_id;
-extern const mla_user_data_id mla_update_provider_platform_id;
-extern const mla_user_data_id mla_update_provider_compiler_id;
-
 /**
  * @brief Returns the current platform identifier string (e.g., "linux_x86_64", "windows64", "wasm").
  *

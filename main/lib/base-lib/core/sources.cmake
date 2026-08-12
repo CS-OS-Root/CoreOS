@@ -99,5 +99,7 @@ set(SOURCE_UI_FILES
 set(SOURCE_UPDATE_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/update/mla_update.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/update/mla_update_http_provider.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/update/mla_update_cli_module.cpp
 )
+
 
