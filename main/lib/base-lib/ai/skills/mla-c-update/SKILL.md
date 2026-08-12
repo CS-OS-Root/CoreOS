@@ -130,8 +130,22 @@ mla_bool_t mla_update_check_and_apply_pending_update(int argc, char** argv);
 
 ---
 
+## Application Integration Checklist
+
+When integrating the auto-update system into an application (such as `mla-build-app`), follow these steps:
+
+1. **CMake Configuration**: Include `${SOURCE_UPDATE_FILES}` in `CMakeLists.txt` for all executable targets consuming update functionality.
+2. **Includes**: Include `mla_update.h` and `mla_update_cli_module.h` in the app header/main file.
+3. **Startup Self-Replacement Check**: Invoke `mla_update_check_and_apply_pending_update(argc, argv)` at app startup before main application boot logic.
+4. **Update Provider Setup**: Configure the global update provider using `mla_update_set_provider(mla_update_provider_http_create(mla_string_const(PRODUCT_NAME)))` during app initialization. Ensure `PRODUCT_NAME` matches the product name used by `create_release_all.sh` / `create_release_all_impl.sh` (e.g., `"mla-build"`).
+5. **CLI Module Registration**: Register `mla_update_cli_module_create()` in the root CLI module tree (`mla_root_module()`).
+
+---
+
 ## Critical Rules & Guidelines
 
-1. **Platform Scoping**: `mla_update_check_and_apply_pending_update` is platform-specific and MUST NOT be declared in `mla_update.h` or `mla_update_management_t`. It is provided directly by platform headers (`mla_global_update_linux.h`, `mla_global_update_windows.h`, `mla_global_update_disabled.h`).
-2. **No Platform Header Guards for Globals**: Inside specific platform headers (`mla_global_update_linux.h` and `mla_global_update_windows.h`), do NOT wrap `g_update_management` or platform functions in extra `#if defined(...)` guards. Inclusion of the platform header implies that platform's symbols are active.
-3. **Git Ignore Rules**: Release build outputs in `release/` must remain ignored by git (`.gitignore`).
+1. **Provider Configuration**: Applications MUST call `mla_update_set_provider(mla_update_provider_http_create(mla_string_const(PRODUCT_NAME)))` on startup. Never leave the update provider unconfigured, as CLI `update check` and `update upgrade` rely on the global provider matching the product name published by `create_release_all.sh`.
+2. **Platform Scoping**: `mla_update_check_and_apply_pending_update` is platform-specific and MUST NOT be declared in `mla_update.h` or `mla_update_management_t`. It is provided directly by platform headers (`mla_global_update_linux.h`, `mla_global_update_windows.h`, `mla_global_update_disabled.h`).
+3. **No Platform Header Guards for Globals**: Inside specific platform headers (`mla_global_update_linux.h` and `mla_global_update_windows.h`), do NOT wrap `g_update_management` or platform functions in extra `#if defined(...)` guards. Inclusion of the platform header implies that platform's symbols are active.
+4. **Release Script Compatibility**: Release binaries published via `create_release_all.sh` are uploaded to `https://releases.home.schlegel.ovh/${PRODUCT_NAME}/${VERSION}/${PLATFORM}/${COMPILER}/`. The HTTP update provider queries version and binary endpoints compatible with this path structure.
+5. **Git Ignore Rules**: Release build outputs in `release/` must remain ignored by git (`.gitignore`).

@@ -195,22 +195,45 @@ mla_bool_t mla_private_update_http_get_binary_content(const mla_update_provider_
         prefix = mla_string_concat(prefix, mla_string_const("/"));
     }
 
-    // Candidate 1: ${base_url}/${module}/${version}/${platform}/${compiler}/app
+    // Candidate 1: ${base_url}/${module}/${version}/${platform}/${compiler}/app or /${module}-app
     if (mla_string_length(module_name) > 0 && mla_string_length(platform) > 0 && mla_string_length(compiler) > 0) {
-        mla_string_t release_url = prefix;
-        release_url = mla_string_concat(release_url, module_name);
-        release_url = mla_string_concat(release_url, mla_string_const("/"));
-        release_url = mla_string_concat(release_url, p_Version);
-        release_url = mla_string_concat(release_url, mla_string_const("/"));
-        release_url = mla_string_concat(release_url, platform);
-        release_url = mla_string_concat(release_url, mla_string_const("/"));
-        release_url = mla_string_concat(release_url, compiler);
-        release_url = mla_string_concat(release_url, mla_string_const("/app"));
+        mla_string_t base_release_url = prefix;
+        base_release_url = mla_string_concat(base_release_url, module_name);
+        base_release_url = mla_string_concat(base_release_url, mla_string_const("/"));
+        base_release_url = mla_string_concat(base_release_url, p_Version);
+        base_release_url = mla_string_concat(base_release_url, mla_string_const("/"));
+        base_release_url = mla_string_concat(base_release_url, platform);
+        base_release_url = mla_string_concat(base_release_url, mla_string_const("/"));
+        base_release_url = mla_string_concat(base_release_url, compiler);
 
+        // Candidate 1a: .../app
+        mla_string_t release_url = mla_string_concat(base_release_url, mla_string_const("/app"));
         mla_http_request_t request = mla_http_get_request(release_url);
         mla_http_client_t client = mla_http_client();
         mla_http_client_set_timeout(client, 5000);
         mla_http_client_response_t client_res = mla_http_client_send_request(client, request);
+
+        if (client_res.status == MLA_HTTP_CLIENT_RESPONSE_STATUS_OK && client_res.response.statusCode == 200) {
+            p_OutStream = client_res.response.content;
+            return true;
+        }
+
+        // Candidate 1b: .../${module}-app (e.g. /mla-build-app published by create_release_all)
+        mla_string_t app_target_url = mla_string_concat(base_release_url, mla_string_const("/"));
+        app_target_url = mla_string_concat(app_target_url, module_name);
+        app_target_url = mla_string_concat(app_target_url, mla_string_const("-app"));
+        request = mla_http_get_request(app_target_url);
+        client_res = mla_http_client_send_request(client, request);
+
+        if (client_res.status == MLA_HTTP_CLIENT_RESPONSE_STATUS_OK && client_res.response.statusCode == 200) {
+            p_OutStream = client_res.response.content;
+            return true;
+        }
+
+        // Candidate 1c: .../${module}-app.exe (for Windows targets published by create_release_all)
+        mla_string_t app_exe_url = mla_string_concat(app_target_url, mla_string_const(".exe"));
+        request = mla_http_get_request(app_exe_url);
+        client_res = mla_http_client_send_request(client, request);
 
         if (client_res.status == MLA_HTTP_CLIENT_RESPONSE_STATUS_OK && client_res.response.statusCode == 200) {
             p_OutStream = client_res.response.content;
