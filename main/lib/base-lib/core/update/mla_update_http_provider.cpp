@@ -7,8 +7,6 @@
 #include "../http/mla_http_request.h"
 #include "../http/mla_http_response.h"
 #include "../system/mla_string_concat.h"
-#include <stdlib.h>
-
 #include "../system/mla_number.h"
 
 mla_user_data_id_init(mla_update_provider_url_id)
@@ -346,10 +344,6 @@ mla_update_provider_t mla_update_provider_http_create(
 
     mla_string_t module_copy = p_Module;
     mla_string_t url_copy = p_BaseUrl;
-    const char* env_url = getenv("MLA_UPDATE_SERVER_URL");
-    if (env_url != nullptr && mla_strlen(env_url) > 0) {
-        url_copy = mla_string_copy(env_url, mla_strlen(env_url));
-    }
     mla_string_t platform_copy = p_Platform;
     mla_string_t compiler_copy = p_Compiler;
 

@@ -8,10 +8,10 @@ You are working in the `mla-core/main` repository, which contains the `mla-c` fr
 2. **No Standard Memory Operators**: **NEVER** use the `new` or `delete` keywords. Memory must be managed using the framework's internal tools:
    - For owning heap-allocated data, use `mla_pointer_t` along with `mla_malloc()` or `mla_malloc_struct()`.
    - For basic allocation where `mla_pointer_t` is not needed, use `mla_platform_malloc()` and `mla_platform_free()`.
-3. **No Standard Libraries**: Do not use standard C/C++ types or containers (e.g., `std::vector`, `std::string`, `int`, `char`).
+3. **No Standard Libraries**: Do not use standard C/C++ types, containers, or functions (e.g., `std::vector`, `std::string`, `int`, `char`, `getenv`, `malloc`).
    - Use MLA data types defined in `mla_data_types.h` (e.g., `mla_int32_t`, `mla_char_t`).
    - Use MLA framework containers like `mla_array_list_t` and `mla_string_t`.
-   - Do not include standard headers like `<string>`, `<vector>`, or `<stdio.h>`.
+   - **NEVER** include standard headers like `<string>`, `<vector>`, `<stdlib.h>`, or `<stdio.h>`.
 4. **Data Ownership**: Use `mla_pointer_t` for owning heap-allocated data. It provides automatic reference-counted cleanup. Use `mla_platform_pointer_t` (raw void pointer) strictly for short-lived, non-owning data access.
 6. **DOCUMENTATION**: 
     - Write clear and concise documentation for all public APIs and data structures.
