@@ -131,19 +131,16 @@ inline void UpdateCliModuleVersionCommandTest() {
     assert_not_null(cmdVersion, "Version command should exist");
 
     if (cmdVersion != nullptr) {
-        mla_update_provider_t provider = { mla_user_data_empty(), mock_cli_update_get_last_version_success, mock_cli_update_get_binary_content_success };
-        mla_update_set_provider(provider);
-
         UpdateCliTestOutputData outputData;
         mla_cli_command_execute_outstream_t outStream = update_cli_test_create_outstream(outputData);
         mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> parameters =
             mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
 
         mla_bool_t res = cmdVersion->execute(*cmdVersion, parameters, outStream);
-        assert_true(res, "Version command should succeed");
+        assert_true(res, "Version command should succeed without provider set");
 
         mla_string_t output = mla_string_copy(mla_r_cast<const mla_char_t*>(outputData.buffer), outputData.position);
-        assert_true(mla_string_contains(output, mla_string_const("Latest version: 2.0.0")), "Output should contain latest version 2.0.0");
+        assert_true(mla_string_contains(output, mla_string_const("Version: ")), "Output should contain Version string");
     }
 }
 
@@ -238,7 +235,6 @@ inline void UpdateCliModuleUpgradeExplicitVersionTest() {
 
 inline void UpdateCliModuleFailuresTest() {
     mla_cli_module_t module = mla_update_cli_module_create();
-    const mla_cli_command_t* cmdVersion = mla_cli_module_find_command(module, mla_string_const("version"));
     const mla_cli_command_t* cmdCheck = mla_cli_module_find_command(module, mla_string_const("check"));
     const mla_cli_command_t* cmdUpgrade = mla_cli_module_find_command(module, mla_string_const("upgrade"));
 
@@ -247,13 +243,6 @@ inline void UpdateCliModuleFailuresTest() {
 
     mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> parameters =
         mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
-
-    if (cmdVersion != nullptr) {
-        UpdateCliTestOutputData outputData1;
-        mla_cli_command_execute_outstream_t outStream1 = update_cli_test_create_outstream(outputData1);
-        mla_bool_t res1 = cmdVersion->execute(*cmdVersion, parameters, outStream1);
-        assert_false(res1, "Version command should fail when provider fails");
-    }
 
     if (cmdCheck != nullptr) {
         UpdateCliTestOutputData outputData2;
@@ -269,6 +258,35 @@ inline void UpdateCliModuleFailuresTest() {
         assert_false(res3, "Upgrade command should fail when provider fails to fetch version");
     }
 }
+
+#if !defined mla_test_disable_network || mla_test_disable_network != 1
+inline void UpdateCliModuleRealReleaseServerTest() {
+    mla_update_provider_t provider = mla_update_provider_http_create(
+        mla_string_const("mla-core"),
+        mla_string_const("https://releases.home.schlegel.ovh")
+    );
+    mla_update_set_provider(provider);
+
+    mla_cli_module_t module = mla_update_cli_module_create();
+    const mla_cli_command_t* cmdVersion = mla_cli_module_find_command(module, mla_string_const("version"));
+    const mla_cli_command_t* cmdCheck = mla_cli_module_find_command(module, mla_string_const("check"));
+
+    mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> parameters =
+        mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+
+    if (cmdVersion != nullptr) {
+        UpdateCliTestOutputData outVer;
+        mla_cli_command_execute_outstream_t streamVer = update_cli_test_create_outstream(outVer);
+        assert_true(cmdVersion->execute(*cmdVersion, parameters, streamVer), "CLI version command should succeed");
+    }
+
+    if (cmdCheck != nullptr) {
+        UpdateCliTestOutputData outChk;
+        mla_cli_command_execute_outstream_t streamChk = update_cli_test_create_outstream(outChk);
+        (void)cmdCheck->execute(*cmdCheck, parameters, streamChk);
+    }
+}
+#endif
 
 inline void RegisterUpdateCliModuleTests(mla_test_executor_t& p_TestExecutor) {
     mla_test_t test = mla_test("UpdateCliModuleCreate", test_category, UpdateCliModuleCreateTest);
@@ -288,6 +306,11 @@ inline void RegisterUpdateCliModuleTests(mla_test_executor_t& p_TestExecutor) {
 
     test = mla_test("UpdateCliModuleFailures", test_category, UpdateCliModuleFailuresTest);
     mla_test_executor_register_test(p_TestExecutor, test);
+
+#if !defined mla_test_disable_network || mla_test_disable_network != 1
+    test = mla_test("UpdateCliModuleRealReleaseServer", test_category, UpdateCliModuleRealReleaseServerTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+#endif
 }
 
 #endif // MLA_UPDATE_CLI_MODULE_TEST_H
