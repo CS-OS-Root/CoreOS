@@ -135,10 +135,6 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
             break;
         }
 
-        if (matchingParamRef != nullptr) {
-            matchedPositon = paramNameEnd;
-        }
-
         // Parameter values require a space or '=' delimiter following the parameter name
         if (commandData[paramNameEnd] != ' ' && commandData[paramNameEnd] != '=') {
             isValueAutocompleteActive = false;

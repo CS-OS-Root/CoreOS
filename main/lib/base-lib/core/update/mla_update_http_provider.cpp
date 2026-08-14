@@ -8,6 +8,8 @@
 #include "../http/mla_http_response.h"
 #include "../system/mla_string_concat.h"
 
+#include "../system/mla_number.h"
+
 mla_user_data_id_init(mla_update_provider_url_id)
 mla_user_data_id_init(mla_update_provider_module_id)
 mla_user_data_id_init(mla_update_provider_platform_id)
@@ -69,6 +71,42 @@ mla_string_t mla_update_get_current_compiler() {
 #endif
 }
 
+mla_int32_t mla_private_update_compare_versions(const mla_string_t& p_V1, const mla_string_t& p_V2) {
+    mla_array_list_t<mla_init_struct(mla_string_t)> parts1 = mla_string_split(p_V1, mla_string_const("."));
+    mla_array_list_t<mla_init_struct(mla_string_t)> parts2 = mla_string_split(p_V2, mla_string_const("."));
+
+    mla_size_t size1 = mla_array_list_size(parts1);
+    mla_size_t size2 = mla_array_list_size(parts2);
+    mla_size_t max_size = size1 > size2 ? size1 : size2;
+
+    for (mla_size_t i = 0; i < max_size; ++i) {
+        mla_uint32_t num1 = 0;
+        mla_uint32_t num2 = 0;
+
+        if (i < size1) {
+            const mla_string_t* s1 = mla_array_list_get_ref(parts1, i);
+            if (s1 != nullptr) {
+                mla_parse_uint32(*s1, num1);
+            }
+        }
+
+        if (i < size2) {
+            const mla_string_t* s2 = mla_array_list_get_ref(parts2, i);
+            if (s2 != nullptr) {
+                mla_parse_uint32(*s2, num2);
+            }
+        }
+
+        if (num1 > num2) {
+            return 1;
+        } else if (num1 < num2) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 mla_string_t mla_private_update_extract_latest_version(const mla_string_t& p_Content) {
     mla_string_t trimmed = mla_string_trim(p_Content);
     if (mla_string_length(trimmed) > 0 && !mla_string_contains(trimmed, mla_string_const("<")) && !mla_string_contains(trimmed, mla_string_const(" "))) {
@@ -92,7 +130,7 @@ mla_string_t mla_private_update_extract_latest_version(const mla_string_t& p_Con
             }
             if (dot_count >= 1 && (i - start) >= 3) {
                 mla_string_t candidate = mla_string_substr(p_Content, start, i - start);
-                if (mla_string_length(best_version) == 0 || mla_string_compare(candidate, best_version) > 0) {
+                if (mla_string_length(best_version) == 0 || mla_private_update_compare_versions(candidate, best_version) > 0) {
                     best_version = candidate;
                 }
             }

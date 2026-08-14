@@ -115,6 +115,9 @@ mla_string_t mla_update_get_current_compiler();
  * @param p_Compiler Target compiler identifier (defaults to current compiler via mla_update_get_current_compiler()).
  * @return mla_update_provider_t configured HTTP update provider.
  */
+mla_int32_t mla_private_update_compare_versions(const mla_string_t& p_V1, const mla_string_t& p_V2);
+mla_string_t mla_private_update_extract_latest_version(const mla_string_t& p_Content);
+
 mla_update_provider_t mla_update_provider_http_create(
     const mla_string_t& p_Module,
     const mla_string_t& p_BaseUrl = mla_string_const("https://releases.home.schlegel.ovh"),

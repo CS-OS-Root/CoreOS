@@ -136,8 +136,49 @@ inline void UpdateGetLastVersionHttpTest() {
 }
 #endif
 
+inline void UpdateSemanticVersionComparisonTest() {
+    mla_string_t v_0_0_9 = mla_string_const("0.0.9");
+    mla_string_t v_0_0_10 = mla_string_const("0.0.10");
+    mla_string_t v_0_0_11 = mla_string_const("0.0.11");
+
+    assert_equal(mla_private_update_compare_versions(v_0_0_11, v_0_0_9), (mla_int32_t)1, "0.0.11 should be greater than 0.0.9");
+    assert_equal(mla_private_update_compare_versions(v_0_0_9, v_0_0_10), (mla_int32_t)-1, "0.0.9 should be less than 0.0.10");
+    assert_equal(mla_private_update_compare_versions(v_0_0_11, v_0_0_10), (mla_int32_t)1, "0.0.11 should be greater than 0.0.10");
+    assert_equal(mla_private_update_compare_versions(v_0_0_11, v_0_0_11), (mla_int32_t)0, "0.0.11 should equal 0.0.11");
+
+    mla_string_t html_dir = mla_string_const(
+        "<html><body>"
+        "<a href=\"/mla-build/0.0.1/\">0.0.1/</a>"
+        "<a href=\"/mla-build/0.0.9/\">0.0.9/</a>"
+        "<a href=\"/mla-build/0.0.10/\">0.0.10/</a>"
+        "<a href=\"/mla-build/0.0.11/\">0.0.11/</a>"
+        "</body></html>"
+    );
+
+    mla_string_t extracted = mla_private_update_extract_latest_version(html_dir);
+    assert_struct_equal(mla_string_t, extracted, mla_string_const("0.0.11"), "Latest extracted version from HTML should be 0.0.11");
+}
+
+#if !defined mla_test_disable_network || mla_test_disable_network != 1
+inline void UpdateRealReleaseServerIntegrationTest() {
+    mla_update_provider_t provider = mla_update_provider_http_create(
+        mla_string_const("mla-build"),
+        mla_string_const("https://releases.home.schlegel.ovh")
+    );
+
+    mla_string_t version = mla_string_empty();
+    mla_bool_t success = mla_update_get_last_version(provider, version);
+    if (success) {
+        assert_true(mla_string_length(version) > 0, "Fetched live version should not be empty");
+    }
+}
+#endif
+
 inline void RegisterUpdateTests(mla_test_executor_t& p_TestExecutor) {
     mla_test_t test = mla_test("UpdateGetCurrentVersion", test_category, UpdateGetCurrentVersionTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("UpdateSemanticVersionComparison", test_category, UpdateSemanticVersionComparisonTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("UpdateGetPlatformCompiler", test_category, UpdateGetPlatformCompilerTest);
@@ -155,6 +196,9 @@ inline void RegisterUpdateTests(mla_test_executor_t& p_TestExecutor) {
 #if !defined mla_test_disable_network || mla_test_disable_network != 1
     if (mla_is_native_multi_tasking) {
         test = mla_test("UpdateGetLastVersionHttp", test_category, UpdateGetLastVersionHttpTest);
+        mla_test_executor_register_test(p_TestExecutor, test);
+
+        test = mla_test("UpdateRealReleaseServerIntegration", test_category, UpdateRealReleaseServerIntegrationTest);
         mla_test_executor_register_test(p_TestExecutor, test);
     }
 #endif
