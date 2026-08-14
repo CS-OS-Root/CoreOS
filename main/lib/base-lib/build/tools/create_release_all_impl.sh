@@ -328,6 +328,12 @@ for item in "${processed_release_dirs[@]}"; do
     done
 done
 
+# Upload root version file for direct version queries
+echo "$VERSION" > "$WORKSPACE_DIR/release/version"
+ensure_remote_dir "/${PRODUCT_NAME}"
+echo "Uploading root version file to /${PRODUCT_NAME}/version ..."
+curl -s -o /dev/null -F "path=@$WORKSPACE_DIR/release/version" "${RELEASES_SERVER_URL}/upload?path=/${PRODUCT_NAME}" || true
+
 if [ "$upload_success" = true ]; then
     # Create Git Tag only after successful uploads
     echo "========================================================================"

@@ -7,6 +7,7 @@
 #include "../http/mla_http_request.h"
 #include "../http/mla_http_response.h"
 #include "../system/mla_string_concat.h"
+#include <stdlib.h>
 
 mla_user_data_id_init(mla_update_provider_url_id)
 mla_user_data_id_init(mla_update_provider_module_id)
@@ -69,6 +70,91 @@ mla_string_t mla_update_get_current_compiler() {
 #endif
 }
 
+inline mla_bool_t mla_private_update_parse_semver(const mla_string_t& p_Str, mla_uint32_t& out_major, mla_uint32_t& out_minor, mla_uint32_t& out_patch) {
+    mla_size_t len = mla_string_length(p_Str);
+    if (len == 0) {
+        return false;
+    }
+    const mla_char_t* data = mla_string_data(p_Str);
+    mla_size_t i = 0;
+    if (data[0] == 'v' || data[0] == 'V') {
+        i = 1;
+    }
+
+    out_major = 0;
+    out_minor = 0;
+    out_patch = 0;
+
+    mla_size_t start = i;
+    while (i < len && data[i] >= '0' && data[i] <= '9') {
+        out_major = (out_major * 10) + static_cast<mla_uint32_t>(data[i] - '0');
+        i++;
+    }
+    if (i == start || i >= len || data[i] != '.') {
+        return false;
+    }
+    i++;
+
+    start = i;
+    while (i < len && data[i] >= '0' && data[i] <= '9') {
+        out_minor = (out_minor * 10) + static_cast<mla_uint32_t>(data[i] - '0');
+        i++;
+    }
+    if (i == start) {
+        return false;
+    }
+    if (i < len && data[i] == '.') {
+        i++;
+        start = i;
+        while (i < len && data[i] >= '0' && data[i] <= '9') {
+            out_patch = (out_patch * 10) + static_cast<mla_uint32_t>(data[i] - '0');
+            i++;
+        }
+        if (i == start) {
+            return false;
+        }
+    }
+
+    if (i < len && data[i] != '/' && data[i] != '\n' && data[i] != '\r' && data[i] != '"' && data[i] != '\'') {
+        return false;
+    }
+
+    return true;
+}
+
+inline mla_int32_t mla_private_update_compare_semver(const mla_string_t& p_V1, const mla_string_t& p_V2) {
+    mla_uint32_t maj1 = 0;
+    mla_uint32_t min1 = 0;
+    mla_uint32_t pat1 = 0;
+    mla_uint32_t maj2 = 0;
+    mla_uint32_t min2 = 0;
+    mla_uint32_t pat2 = 0;
+
+    mla_bool_t valid1 = mla_private_update_parse_semver(p_V1, maj1, min1, pat1);
+    mla_bool_t valid2 = mla_private_update_parse_semver(p_V2, maj2, min2, pat2);
+
+    if (valid1 && valid2) {
+        if (maj1 != maj2) {
+            return (maj1 > maj2) ? 1 : -1;
+        }
+        if (min1 != min2) {
+            return (min1 > min2) ? 1 : -1;
+        }
+        if (pat1 != pat2) {
+            return (pat1 > pat2) ? 1 : -1;
+        }
+        return 0;
+    }
+
+    if (valid1) {
+        return 1;
+    }
+    if (valid2) {
+        return -1;
+    }
+    return mla_string_compare(p_V1, p_V2);
+}
+
 mla_string_t mla_private_update_extract_latest_version(const mla_string_t& p_Content) {
     mla_string_t trimmed = mla_string_trim(p_Content);
     if (mla_string_length(trimmed) > 0 && !mla_string_contains(trimmed, mla_string_const("<")) && !mla_string_contains(trimmed, mla_string_const(" "))) {
@@ -81,9 +167,12 @@ mla_string_t mla_private_update_extract_latest_version(const mla_string_t& p_Con
     mla_size_t i = 0;
 
     while (i < len) {
-        if (data[i] >= '0' && data[i] <= '9') {
+        if ((data[i] >= '0' && data[i] <= '9') || ((data[i] == 'v' || data[i] == 'V') && i + 1 < len && data[i + 1] >= '0' && data[i + 1] <= '9')) {
             mla_size_t start = i;
             mla_uint32_t dot_count = 0;
+            if (data[i] == 'v' || data[i] == 'V') {
+                i++;
+            }
             while (i < len && ((data[i] >= '0' && data[i] <= '9') || data[i] == '.')) {
                 if (data[i] == '.') {
                     dot_count++;
@@ -92,8 +181,15 @@ mla_string_t mla_private_update_extract_latest_version(const mla_string_t& p_Con
             }
             if (dot_count >= 1 && (i - start) >= 3) {
                 mla_string_t candidate = mla_string_substr(p_Content, start, i - start);
-                if (mla_string_length(best_version) == 0 || mla_string_compare(candidate, best_version) > 0) {
-                    best_version = candidate;
+                mla_uint32_t maj = 0;
+                mla_uint32_t min = 0;
+                mla_uint32_t pat = 0;
+                if (mla_private_update_parse_semver(candidate, maj, min, pat)) {
+                    if (maj < 2000) {
+                        if (mla_string_length(best_version) == 0 || mla_private_update_compare_semver(candidate, best_version) > 0) {
+                            best_version = candidate;
+                        }
+                    }
                 }
             }
         } else {
@@ -134,8 +230,11 @@ mla_bool_t mla_private_update_http_get_last_version(const mla_update_provider_t&
 
     if (client_res.status == MLA_HTTP_CLIENT_RESPONSE_STATUS_OK && client_res.response.statusCode == 200) {
         mla_stream_input_t content_stream = client_res.response.content;
-        p_OutVersion = mla_string_from_stream(content_stream, 10000);
-        return true;
+        mla_string_t version_raw = mla_string_trim(mla_string_from_stream(content_stream, 10000));
+        if (mla_string_length(version_raw) > 0) {
+            p_OutVersion = version_raw;
+            return true;
+        }
     }
 
     // Try root version endpoint fallback: ${base_url}/version
@@ -145,8 +244,11 @@ mla_bool_t mla_private_update_http_get_last_version(const mla_update_provider_t&
         client_res = mla_http_client_send_request(client, request);
         if (client_res.status == MLA_HTTP_CLIENT_RESPONSE_STATUS_OK && client_res.response.statusCode == 200) {
             mla_stream_input_t content_stream = client_res.response.content;
-            p_OutVersion = mla_string_from_stream(content_stream, 10000);
-            return true;
+            mla_string_t version_raw = mla_string_trim(mla_string_from_stream(content_stream, 10000));
+            if (mla_string_length(version_raw) > 0) {
+                p_OutVersion = version_raw;
+                return true;
+            }
         }
     }
 
@@ -293,6 +395,10 @@ mla_update_provider_t mla_update_provider_http_create(
 
     mla_string_t module_copy = p_Module;
     mla_string_t url_copy = p_BaseUrl;
+    const char* env_url = getenv("MLA_UPDATE_SERVER_URL");
+    if (env_url != nullptr && mla_strlen(env_url) > 0) {
+        url_copy = mla_string_copy(env_url, mla_strlen(env_url));
+    }
     mla_string_t platform_copy = p_Platform;
     mla_string_t compiler_copy = p_Compiler;
 

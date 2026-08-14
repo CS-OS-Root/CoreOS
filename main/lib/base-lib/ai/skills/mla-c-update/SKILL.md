@@ -103,6 +103,15 @@ if (http_provider.get_binary_content(http_provider, latest_version, binary_strea
 }
 ```
 
+### 4. Root Version Endpoint & SemVer Resolution
+
+The HTTP update provider resolves the latest available version using the following endpoint resolution sequence:
+1. **Direct Module Version File**: `${base_url}/${module_name}/version` (plain-text SemVer string, e.g. `0.0.14\n`).
+2. **Root Version File Fallback**: `${base_url}/version` (plain-text SemVer string).
+3. **Directory Listing Fallback**: `${base_url}/${module_name}/?raw=true` (HTML directory listing).
+
+Candidate version strings are extracted and compared using numeric SemVer component comparison (`mla_private_update_compare_semver`), ensuring higher version numbers (e.g. `0.0.14`) take precedence over lower versions (`0.0.2`) and filtering out 4-digit calendar years.
+
 ---
 
 ## Platform Replacement Flow (`check_and_apply_pending_update`)

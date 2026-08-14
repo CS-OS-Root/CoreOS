@@ -9,6 +9,7 @@
 #include "../../core/filesystem/mla_file_system.h"
 #include "../../core/external_task/mla_external_task.h"
 #include "../../core/system/mla_string_concat.h"
+#include "mla_global_file_system_linux.h"
 #include <unistd.h>
 #include <sys/stat.h>
 #include <stdlib.h>
@@ -27,12 +28,24 @@ inline mla_update_error_t mla_private_update_linux_upgrade_to_version(mla_stream
     mla_string_t current_exe_path = mla_string(exe_path_buf);
 
     mla_string_t temp_binary_path = mla_string_const("/tmp/mla_update_app_tmp");
-    if (mla_fs_file_exists(temp_binary_path)) {
-        mla_fs_delete_file(temp_binary_path);
+    mla_file_system_t fs = mla_file_system_native_create_global();
+
+    if (fs.file_exists != nullptr && fs.file_exists(fs, temp_binary_path)) {
+        if (fs.delete_file != nullptr) {
+            fs.delete_file(fs, temp_binary_path);
+        }
     }
 
-    if (!mla_fs_copy_stream_to_file(p_BinaryStream, temp_binary_path)) {
+    mla_file_system_stream_t out_fs_stream = mla_file_system_stream_empty();
+    if (fs.open_file == nullptr || !fs.open_file(fs, temp_binary_path, MLA_FILE_SYSTEM_FILE_OPEN_MODE_WRITE, out_fs_stream)) {
         return MLA_UPDATE_ERROR_WRITE_FAILED;
+    }
+
+    mla_stream_output_t out = mla_file_system_stream_as_output(out_fs_stream);
+    mla_byte_t buffer[8192];
+    mla_size_t read_bytes = 0;
+    while ((read_bytes = p_BinaryStream.read(p_BinaryStream, 0, sizeof(buffer), buffer)) > 0) {
+        out.write(out, 0, read_bytes, buffer);
     }
 
     mla_c_string_t temp_c_path = mla_string_to_cString(temp_binary_path);
@@ -83,8 +96,22 @@ inline mla_bool_t mla_update_check_and_apply_pending_update(int argc, char** arg
     own_exe_buf[len] = '\0';
     mla_string_t own_temp_path = mla_string(own_exe_buf);
 
-    if (!mla_fs_copy_file_to(own_temp_path, target_path)) {
+    mla_file_system_t fs = mla_file_system_native_create_global();
+    mla_file_system_stream_t in_fs_stream = mla_file_system_stream_empty();
+    mla_file_system_stream_t out_fs_stream = mla_file_system_stream_empty();
+
+    if (fs.open_file == nullptr ||
+        !fs.open_file(fs, own_temp_path, MLA_FILE_SYSTEM_FILE_OPEN_MODE_READ, in_fs_stream) ||
+        !fs.open_file(fs, target_path, MLA_FILE_SYSTEM_FILE_OPEN_MODE_WRITE, out_fs_stream)) {
         return false;
+    }
+
+    mla_stream_input_t in = mla_file_system_stream_as_input(in_fs_stream);
+    mla_stream_output_t out = mla_file_system_stream_as_output(out_fs_stream);
+    mla_byte_t buffer[8192];
+    mla_size_t read_bytes = 0;
+    while ((read_bytes = in.read(in, 0, sizeof(buffer), buffer)) > 0) {
+        out.write(out, 0, read_bytes, buffer);
     }
 
     mla_c_string_t target_c_path = mla_string_to_cString(target_path);

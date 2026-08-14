@@ -15,14 +15,9 @@ mla_bool_t mla_private_update_cli_version(
     (void)p_Command;
     (void)p_Parameters;
 
-    mla_string_t latest_version = mla_string_empty();
-    if (!mla_update_get_last_version(latest_version)) {
-        p_Out.writeCString(p_Out.userdata, "Error: Failed to fetch latest version.\n");
-        return false;
-    }
-
-    p_Out.writeCString(p_Out.userdata, "Latest version: ");
-    p_Out.write(p_Out.userdata, latest_version);
+    mla_string_t current_version = mla_update_get_current_version();
+    p_Out.writeCString(p_Out.userdata, "Current version: ");
+    p_Out.write(p_Out.userdata, current_version);
     p_Out.writeCString(p_Out.userdata, "\n");
     return true;
 }
