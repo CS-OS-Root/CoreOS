@@ -45,6 +45,7 @@ void mla_cli_history_record_value(mla_cli_history_store_t &store, const mla_stri
 
     mla_cli_history_entry_t new_entry = { key, value };
     mla_array_list_add(store.entries, new_entry);
+    mla_cli_history_save_to_file(store, mla_string_const("/.cli_history.json"));
 }
 
 mla_array_list_t<mla_init_struct(mla_string_t)> mla_cli_history_get_candidates(const mla_cli_history_store_t &store,

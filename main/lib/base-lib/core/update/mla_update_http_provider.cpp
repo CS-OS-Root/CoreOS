@@ -9,6 +9,8 @@
 #include "../system/mla_string_concat.h"
 #include <stdlib.h>
 
+#include "../system/mla_number.h"
+
 mla_user_data_id_init(mla_update_provider_url_id)
 mla_user_data_id_init(mla_update_provider_module_id)
 mla_user_data_id_init(mla_update_provider_platform_id)
@@ -70,89 +72,40 @@ mla_string_t mla_update_get_current_compiler() {
 #endif
 }
 
-inline mla_bool_t mla_private_update_parse_semver(const mla_string_t& p_Str, mla_uint32_t& out_major, mla_uint32_t& out_minor, mla_uint32_t& out_patch) {
-    mla_size_t len = mla_string_length(p_Str);
-    if (len == 0) {
-        return false;
-    }
-    const mla_char_t* data = mla_string_data(p_Str);
-    mla_size_t i = 0;
-    if (data[0] == 'v' || data[0] == 'V') {
-        i = 1;
-    }
+mla_int32_t mla_private_update_compare_versions(const mla_string_t& p_V1, const mla_string_t& p_V2) {
+    mla_array_list_t<mla_init_struct(mla_string_t)> parts1 = mla_string_split(p_V1, mla_string_const("."));
+    mla_array_list_t<mla_init_struct(mla_string_t)> parts2 = mla_string_split(p_V2, mla_string_const("."));
 
-    out_major = 0;
-    out_minor = 0;
-    out_patch = 0;
+    mla_size_t size1 = mla_array_list_size(parts1);
+    mla_size_t size2 = mla_array_list_size(parts2);
+    mla_size_t max_size = size1 > size2 ? size1 : size2;
 
-    mla_size_t start = i;
-    while (i < len && data[i] >= '0' && data[i] <= '9') {
-        out_major = (out_major * 10) + static_cast<mla_uint32_t>(data[i] - '0');
-        i++;
-    }
-    if (i == start || i >= len || data[i] != '.') {
-        return false;
-    }
-    i++;
+    for (mla_size_t i = 0; i < max_size; ++i) {
+        mla_uint32_t num1 = 0;
+        mla_uint32_t num2 = 0;
 
-    start = i;
-    while (i < len && data[i] >= '0' && data[i] <= '9') {
-        out_minor = (out_minor * 10) + static_cast<mla_uint32_t>(data[i] - '0');
-        i++;
-    }
-    if (i == start) {
-        return false;
-    }
-    if (i < len && data[i] == '.') {
-        i++;
-        start = i;
-        while (i < len && data[i] >= '0' && data[i] <= '9') {
-            out_patch = (out_patch * 10) + static_cast<mla_uint32_t>(data[i] - '0');
-            i++;
+        if (i < size1) {
+            const mla_string_t* s1 = mla_array_list_get_ref(parts1, i);
+            if (s1 != nullptr) {
+                mla_parse_uint32(*s1, num1);
+            }
         }
-        if (i == start) {
-            return false;
+
+        if (i < size2) {
+            const mla_string_t* s2 = mla_array_list_get_ref(parts2, i);
+            if (s2 != nullptr) {
+                mla_parse_uint32(*s2, num2);
+            }
+        }
+
+        if (num1 > num2) {
+            return 1;
+        } else if (num1 < num2) {
+            return -1;
         }
     }
 
-    if (i < len && data[i] != '/' && data[i] != '\n' && data[i] != '\r' && data[i] != '"' && data[i] != '\'') {
-        return false;
-    }
-
-    return true;
-}
-
-inline mla_int32_t mla_private_update_compare_semver(const mla_string_t& p_V1, const mla_string_t& p_V2) {
-    mla_uint32_t maj1 = 0;
-    mla_uint32_t min1 = 0;
-    mla_uint32_t pat1 = 0;
-    mla_uint32_t maj2 = 0;
-    mla_uint32_t min2 = 0;
-    mla_uint32_t pat2 = 0;
-
-    mla_bool_t valid1 = mla_private_update_parse_semver(p_V1, maj1, min1, pat1);
-    mla_bool_t valid2 = mla_private_update_parse_semver(p_V2, maj2, min2, pat2);
-
-    if (valid1 && valid2) {
-        if (maj1 != maj2) {
-            return (maj1 > maj2) ? 1 : -1;
-        }
-        if (min1 != min2) {
-            return (min1 > min2) ? 1 : -1;
-        }
-        if (pat1 != pat2) {
-            return (pat1 > pat2) ? 1 : -1;
-        }
-        return 0;
-    }
-
-    if (valid1) {
-        return 1;
-    }
-    if (valid2) {
-        return -1;
-    }
-    return mla_string_compare(p_V1, p_V2);
+    return 0;
 }
 
 mla_string_t mla_private_update_extract_latest_version(const mla_string_t& p_Content) {
@@ -179,16 +132,14 @@ mla_string_t mla_private_update_extract_latest_version(const mla_string_t& p_Con
                 }
                 i++;
             }
-            if (dot_count >= 1 && (i - start) >= 3) {
+            if (dot_count >= 1 && dot_count <= 3 && i > start) {
                 mla_string_t candidate = mla_string_substr(p_Content, start, i - start);
-                mla_uint32_t maj = 0;
-                mla_uint32_t min = 0;
-                mla_uint32_t pat = 0;
-                if (mla_private_update_parse_semver(candidate, maj, min, pat)) {
-                    if (maj < 2000) {
-                        if (mla_string_length(best_version) == 0 || mla_private_update_compare_semver(candidate, best_version) > 0) {
-                            best_version = candidate;
-                        }
+                if (mla_string_starts_with(candidate, mla_string_const("v")) || mla_string_starts_with(candidate, mla_string_const("V"))) {
+                    candidate = mla_string_substr(candidate, 1, mla_string_length(candidate) - 1);
+                }
+                if (mla_string_length(candidate) > 0) {
+                    if (mla_string_length(best_version) == 0 || mla_private_update_compare_versions(candidate, best_version) > 0) {
+                        best_version = candidate;
                     }
                 }
             }
