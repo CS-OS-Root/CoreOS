@@ -134,17 +134,56 @@ inline void UpdateGetLastVersionHttpTest() {
         assert_fail("Should start HTTP update server");
     }
 }
+
+inline mla_bool_t update_test_http_module_version_handler(mla_http_server_t& http_server, const mla_user_data_t &userdata, const mla_http_request_t &request, mla_http_response_t &response) {
+    (void)http_server;
+    (void)userdata;
+    (void)request;
+    response.statusCode = 200;
+    response.content = mla_stream_input_from_string(mla_string_const("4.2.0"));
+    return true;
+}
+
+inline void UpdateGetLastVersionHttpModuleEndpointTest() {
+    mla_network_host_t host = mla_network_host_ip4(mla_string_const("127.0.0.1"), 41260);
+    mla_http_server_t server = mla_http_server(host);
+
+    mla_user_data_t userdata = mla_user_data_empty();
+    mla_http_server_handler_item_t handler = mla_http_server_handler_starts_with(
+        mla_http_method_get, userdata, mla_string_const("/mod_test/version"), update_test_http_module_version_handler);
+    assert_true(mla_http_server_register_handler(server, handler), "Should register module version handler");
+
+    mla_http_server_set_timeout(server, 2000);
+
+    if (mla_http_server_start(server, 2)) {
+        mla_update_provider_t provider = mla_update_provider_http_create(mla_string_const("mod_test"), mla_string_const("http://127.0.0.1:41260"));
+        mla_string_t version = mla_string_empty();
+        mla_bool_t success = mla_update_get_last_version(provider, version);
+        assert_true(success, "Module HTTP get_last_version should succeed");
+        assert_true(mla_string_equals(version, mla_string_const("4.2.0")), "Version from module HTTP server should match 4.2.0");
+
+        mla_http_server_stop(server);
+    } else {
+        assert_fail("Should start HTTP update server for module endpoint test");
+    }
+}
 #endif
 
 inline void UpdateSemanticVersionComparisonTest() {
     mla_string_t v_0_0_9 = mla_string_const("0.0.9");
     mla_string_t v_0_0_10 = mla_string_const("0.0.10");
     mla_string_t v_0_0_11 = mla_string_const("0.0.11");
+    mla_string_t v_1_0_0 = mla_string_const("1.0.0");
+    mla_string_t v_2_0_0 = mla_string_const("2.0.0");
+    mla_string_t v_1_2_0 = mla_string_const("1.2.0");
+    mla_string_t v_1_10_0 = mla_string_const("1.10.0");
 
     assert_equal(mla_private_update_compare_versions(v_0_0_11, v_0_0_9), (mla_int32_t)1, "0.0.11 should be greater than 0.0.9");
     assert_equal(mla_private_update_compare_versions(v_0_0_9, v_0_0_10), (mla_int32_t)-1, "0.0.9 should be less than 0.0.10");
     assert_equal(mla_private_update_compare_versions(v_0_0_11, v_0_0_10), (mla_int32_t)1, "0.0.11 should be greater than 0.0.10");
     assert_equal(mla_private_update_compare_versions(v_0_0_11, v_0_0_11), (mla_int32_t)0, "0.0.11 should equal 0.0.11");
+    assert_equal(mla_private_update_compare_versions(v_2_0_0, v_1_0_0), (mla_int32_t)1, "2.0.0 should be greater than 1.0.0");
+    assert_equal(mla_private_update_compare_versions(v_1_10_0, v_1_2_0), (mla_int32_t)1, "1.10.0 should be greater than 1.2.0");
 
     mla_string_t html_dir = mla_string_const(
         "<html><body>"
@@ -157,6 +196,18 @@ inline void UpdateSemanticVersionComparisonTest() {
 
     mla_string_t extracted = mla_private_update_extract_latest_version(html_dir);
     assert_struct_equal(mla_string_t, extracted, mla_string_const("0.0.11"), "Latest extracted version from HTML should be 0.0.11");
+
+    mla_string_t html_dir_v = mla_string_const(
+        "<html><body>"
+        "<a href=\"/mla-build/v0.0.1/\">v0.0.1/</a>"
+        "<a href=\"/mla-build/v0.0.9/\">v0.0.9/</a>"
+        "<a href=\"/mla-build/v0.0.12/\">v0.0.12/</a>"
+        "<a href=\"/mla-build/V1.5.0/\">V1.5.0/</a>"
+        "</body></html>"
+    );
+
+    mla_string_t extracted_v = mla_private_update_extract_latest_version(html_dir_v);
+    assert_struct_equal(mla_string_t, extracted_v, mla_string_const("1.5.0"), "Latest extracted version with 'v'/'V' prefix should be 1.5.0");
 }
 
 #if !defined mla_test_disable_network || mla_test_disable_network != 1
@@ -196,6 +247,9 @@ inline void RegisterUpdateTests(mla_test_executor_t& p_TestExecutor) {
 #if !defined mla_test_disable_network || mla_test_disable_network != 1
     if (mla_is_native_multi_tasking) {
         test = mla_test("UpdateGetLastVersionHttp", test_category, UpdateGetLastVersionHttpTest);
+        mla_test_executor_register_test(p_TestExecutor, test);
+
+        test = mla_test("UpdateGetLastVersionHttpModuleEndpoint", test_category, UpdateGetLastVersionHttpModuleEndpointTest);
         mla_test_executor_register_test(p_TestExecutor, test);
 
         test = mla_test("UpdateRealReleaseServerIntegration", test_category, UpdateRealReleaseServerIntegrationTest);
