@@ -403,6 +403,22 @@ void ZeroTimeoutTest() {
 }
 
 
+void HttpsClientConnectFlowTest() {
+    mla_http_client_t client = mla_http_client();
+    client.timeout_ms = 25;
+    client.resolve_host = mock_resolve_host_success;
+
+    mla_http_request_t request = mla_http_get_request(mla_string_const("https://127.0.0.1:443"));
+    mla_http_client_response_t response = mla_http_client_send_request(client, request);
+
+    assert_equal(response.status, MLA_HTTP_CLIENT_RESPONSE_STATUS_ERROR_CONNECTION_FAILED,
+                "HTTPS connect should attempt TLS connection and fail gracefully when host is unreachable");
+    assert_true(!mla_string_is_empty(response.errorMessage),
+                "HTTPS failure should populate error message");
+
+    response = mla_http_client_response_invalid();
+}
+
 void RegisterHttpClientTests(mla_test_executor_t &p_TestExecutor) {
 
     mla_test_t test = mla_test("SimpleGetRequestWithoutDeflate", test_category, SimpleGetRequestWithoutDeflateTest);
@@ -427,6 +443,9 @@ void RegisterHttpClientTests(mla_test_executor_t &p_TestExecutor) {
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("HttpsSecureTransportUnavailable", test_category, HttpsSecureTransportUnavailableTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("HttpsClientConnectFlow", test_category, HttpsClientConnectFlowTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("UnsupportedUrlScheme", test_category, UnsupportedUrlSchemeTest);

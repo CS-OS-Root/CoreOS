@@ -13,10 +13,12 @@ This project follows strict data type and coding conventions to ensure cross-pla
 
 ### 1. Use Only MLA Framework Types
 
-**NEVER** use standard C/C++ types directly. Always use the MLA framework types defined in `mla_data_types.h`:
+**NEVER** use standard C/C++ types directly in core framework code. Always use the MLA framework types defined in `mla_data_types.h`:
 
 - ❌ `int`, `long`, `short`, `char`, `unsigned int`, etc.
 - ✅ `mla_int32_t`, `mla_int64_t`, `mla_uint32_t`, `mla_char_t`, etc.
+
+*Note (Platform Modules Exception)*: Platform implementations (code under `platform/` or OS abstraction headers interfacing directly with system APIs) are permitted to use standard platform primitives (`int`, `char`, `const char*`, socket types) as required by native OS headers and APIs.
 
 ### 2. Available MLA Types
 

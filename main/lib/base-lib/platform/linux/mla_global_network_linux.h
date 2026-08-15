@@ -20,7 +20,150 @@
 #include <ifaddrs.h>
 #include <net/if.h>
 
-mla_user_data_id_init(mla_network_connection_user_data_name)
+#if defined(MLA_HAS_OPENSSL) && MLA_HAS_OPENSSL == 1
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#endif
+
+inline mla_user_data_id mla_private_network_connection_user_data_id() {
+    static const mla_user_data_id id = mla_get_next_user_data_id();
+    return id;
+}
+
+#if defined(MLA_HAS_OPENSSL) && MLA_HAS_OPENSSL == 1
+inline mla_user_data_id mla_private_network_ssl_connection_user_data_id() {
+    static const mla_user_data_id id = mla_get_next_user_data_id();
+    return id;
+}
+
+struct mla_linux_ssl_context_t {
+    int sock;
+    SSL* ssl;
+};
+
+inline SSL_CTX* mla_linux_get_client_ssl_ctx() {
+    static SSL_CTX* g_client_ssl_ctx = nullptr;
+    if (g_client_ssl_ctx == nullptr) {
+        OPENSSL_init_ssl(0, nullptr);
+        g_client_ssl_ctx = SSL_CTX_new(TLS_client_method());
+        if (g_client_ssl_ctx != nullptr) {
+            SSL_CTX_set_default_verify_paths(g_client_ssl_ctx);
+        }
+    }
+    return g_client_ssl_ctx;
+}
+
+inline void mla_linux_ssl_socket_cleanup(const mla_dynamic_data_t& userData) {
+    mla_linux_ssl_context_t* ctx = mla_r_cast<mla_linux_ssl_context_t*>(userData.asPointer);
+    if (ctx != nullptr) {
+        if (ctx->ssl != nullptr) {
+            SSL_shutdown(ctx->ssl);
+            SSL_free(ctx->ssl);
+            ctx->ssl = nullptr;
+        }
+        if (ctx->sock >= 0) {
+            close(ctx->sock);
+            ctx->sock = -1;
+        }
+        mla_platform_free(ctx);
+    }
+}
+
+inline mla_size_t mla_linux_ssl_socket_read(mla_stream_input_t& input, mla_size_t offset, mla_size_t length, mla_byte_t* buffer) {
+    (void)offset;
+    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(input.userdata, mla_private_network_ssl_connection_user_data_id());
+    mla_linux_ssl_context_t* ssl_ctx = mla_r_cast<mla_linux_ssl_context_t*>(socket_data.asPointer);
+    if (ssl_ctx == nullptr || ssl_ctx->ssl == nullptr || ssl_ctx->sock < 0) {
+        return 0;
+    }
+
+    int bytesRead = SSL_read(ssl_ctx->ssl, mla_r_cast<char*>(buffer) + offset, mla_s_cast<int>(length));
+    if (bytesRead > 0) {
+        return mla_s_cast<mla_size_t>(bytesRead);
+    }
+
+    int err = SSL_get_error(ssl_ctx->ssl, bytesRead);
+    if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(ssl_ctx->sock, &fds);
+        struct timeval tv;
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+        if (err == SSL_ERROR_WANT_READ) {
+            select(ssl_ctx->sock + 1, &fds, nullptr, nullptr, &tv);
+        } else {
+            select(ssl_ctx->sock + 1, nullptr, &fds, nullptr, &tv);
+        }
+    }
+
+    return 0;
+}
+
+inline mla_size_t mla_linux_ssl_socket_remaining_bytes(mla_stream_input_t& input) {
+    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(input.userdata, mla_private_network_ssl_connection_user_data_id());
+    mla_linux_ssl_context_t* ssl_ctx = mla_r_cast<mla_linux_ssl_context_t*>(socket_data.asPointer);
+    if (ssl_ctx == nullptr || ssl_ctx->ssl == nullptr) {
+        return 0;
+    }
+
+    int pending = SSL_pending(ssl_ctx->ssl);
+    if (pending > 0) {
+        return mla_s_cast<mla_size_t>(pending);
+    }
+
+    int socket_pending = 0;
+    if (ioctl(ssl_ctx->sock, FIONREAD, &socket_pending) == 0 && socket_pending > 0) {
+        return mla_size_max;
+    }
+
+    return 0;
+}
+
+inline mla_size_t mla_linux_ssl_socket_write(mla_stream_output_t& output, mla_size_t offset, mla_size_t length, const mla_byte_t* buffer) {
+    (void)offset;
+    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(output.userdata, mla_private_network_ssl_connection_user_data_id());
+    mla_linux_ssl_context_t* ssl_ctx = mla_r_cast<mla_linux_ssl_context_t*>(socket_data.asPointer);
+    if (ssl_ctx == nullptr || ssl_ctx->ssl == nullptr || ssl_ctx->sock < 0) {
+        return 0;
+    }
+
+    mla_size_t total_sent = 0;
+    mla_size_t bytes_remaining = length;
+    const char* ptr = mla_r_cast<const char*>(buffer) + offset;
+
+    while (bytes_remaining > 0) {
+        int sent = SSL_write(ssl_ctx->ssl, ptr + total_sent, mla_s_cast<int>(bytes_remaining));
+        if (sent > 0) {
+            total_sent += mla_s_cast<mla_size_t>(sent);
+            bytes_remaining -= mla_s_cast<mla_size_t>(sent);
+        } else {
+            int err = SSL_get_error(ssl_ctx->ssl, sent);
+            if (err == SSL_ERROR_WANT_WRITE || err == SSL_ERROR_WANT_READ) {
+                fd_set write_set;
+                FD_ZERO(&write_set);
+                FD_SET(ssl_ctx->sock, &write_set);
+                struct timeval timeout;
+                timeout.tv_sec = 5;
+                timeout.tv_usec = 0;
+                if (err == SSL_ERROR_WANT_WRITE) {
+                    if (select(ssl_ctx->sock + 1, nullptr, &write_set, nullptr, &timeout) <= 0) {
+                        break;
+                    }
+                } else {
+                    if (select(ssl_ctx->sock + 1, &write_set, nullptr, nullptr, &timeout) <= 0) {
+                        break;
+                    }
+                }
+                continue;
+            }
+            break;
+        }
+    }
+
+    return total_sent;
+}
+#endif
 
 mla_bool_t mla_linux_resolve_host(mla_network_host_t &host, const mla_string_t &hostname, mla_uint16_t port) {
     struct addrinfo hints = {
@@ -79,7 +222,7 @@ void mla_linux_socket_cleanup(const mla_dynamic_data_t& userData) {
 
 mla_size_t mla_linux_socket_read(mla_stream_input_t& input, mla_size_t offset, mla_size_t length, mla_byte_t* buffer) {
     (void)offset;
-    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(input.userdata, mla_network_connection_user_data_name);
+    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(input.userdata, mla_private_network_connection_user_data_id());
     int sock = socket_data.asInt32;
     if (sock < 0) {
         return 0;
@@ -94,7 +237,7 @@ mla_size_t mla_linux_socket_read(mla_stream_input_t& input, mla_size_t offset, m
 }
 
 mla_size_t mla_linux_socket_remaining_bytes(mla_stream_input_t& input) {
-    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(input.userdata, mla_network_connection_user_data_name);
+    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(input.userdata, mla_private_network_connection_user_data_id());
     int sock = socket_data.asInt32;
     if (sock < 0) {
         return 0;
@@ -112,7 +255,7 @@ mla_size_t mla_linux_socket_remaining_bytes(mla_stream_input_t& input) {
 
 mla_size_t mla_linux_socket_write(mla_stream_output_t& output, mla_size_t offset, mla_size_t length, const mla_byte_t* buffer) {
     (void)offset;
-    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(output.userdata, mla_network_connection_user_data_name);
+    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(output.userdata, mla_private_network_connection_user_data_id());
     int sock = socket_data.asInt32;
     if (sock < 0) {
         return 0;
@@ -246,7 +389,7 @@ mla_bool_t mla_linux_connect(mla_network_connection_t &connection, const mla_net
     }
 
     mla_user_data_t userData = mla_user_data_empty();
-    mla_user_data_set_native_resource(userData, mla_network_connection_user_data_name, mla_dynamic_data_from_int32(sock), mla_linux_socket_cleanup);
+    mla_user_data_set_native_resource(userData, mla_private_network_connection_user_data_id(), mla_dynamic_data_from_int32(sock), mla_linux_socket_cleanup);
 
     connection.inputStream = {
         userData,
@@ -273,11 +416,138 @@ mla_bool_t mla_linux_connect_secure(
         return mla_linux_connect(connection, host, type, timeout_ms);
     }
 
+#if defined(MLA_HAS_OPENSSL) && MLA_HAS_OPENSSL == 1
+    if (type != mla_connection_type_tcp) {
+        return false;
+    }
+
+    if (!mla_linux_connect(connection, host, type, timeout_ms)) {
+        return false;
+    }
+
+    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(connection.inputStream.userdata, mla_private_network_connection_user_data_id());
+    int sock = socket_data.asInt32;
+    if (sock < 0) {
+        mla_network_connection_disconnect(connection);
+        return false;
+    }
+
+    SSL_CTX* ssl_ctx = mla_linux_get_client_ssl_ctx();
+    if (ssl_ctx == nullptr) {
+        mla_network_connection_disconnect(connection);
+        return false;
+    }
+
+    SSL* ssl = SSL_new(ssl_ctx);
+    if (ssl == nullptr) {
+        mla_network_connection_disconnect(connection);
+        return false;
+    }
+
+    SSL_set_fd(ssl, sock);
+
+    mla_network_tls_config_t tls_config = mla_network_security_config_get_tls_config(security_config);
+    mla_string_t server_name = mla_network_tls_config_get_server_name(tls_config);
+    if (mla_string_is_empty(server_name)) {
+        server_name = host.address.address;
+    }
+
+    if (!mla_string_is_empty(server_name)) {
+        mla_c_string_t c_server_name = mla_string_to_cString(server_name);
+        const mla_char_t* c_str = mla_c_string_data(c_server_name);
+        if (c_str != nullptr) {
+            SSL_set_tlsext_host_name(ssl, c_str);
+        }
+    }
+
+    if (mla_network_tls_config_get_verify_peer(tls_config)) {
+        SSL_set_verify(ssl, SSL_VERIFY_PEER, nullptr);
+    } else {
+        SSL_set_verify(ssl, SSL_VERIFY_NONE, nullptr);
+    }
+
+    mla_bool_t handshake_done = false;
+    mla_size_t elapsed_ms = 0;
+    while (!handshake_done && elapsed_ms < timeout_ms) {
+        int ret = SSL_connect(ssl);
+        if (ret == 1) {
+            handshake_done = true;
+            break;
+        }
+
+        int err = SSL_get_error(ssl, ret);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE) {
+            fd_set rset;
+            fd_set wset;
+            FD_ZERO(&rset);
+            FD_ZERO(&wset);
+            if (err == SSL_ERROR_WANT_READ) {
+                FD_SET(sock, &rset);
+            } else {
+                FD_SET(sock, &wset);
+            }
+
+            struct timeval tv;
+            tv.tv_sec = 0;
+            tv.tv_usec = 50000;
+            int sret = select(sock + 1, &rset, &wset, nullptr, &tv);
+            if (sret < 0 && errno != EINTR) {
+                break;
+            }
+            elapsed_ms += 50;
+        } else {
+            break;
+        }
+    }
+
+    if (!handshake_done) {
+        SSL_free(ssl);
+        mla_network_connection_disconnect(connection);
+        return false;
+    }
+
+    mla_linux_ssl_context_t* ssl_conn_ctx = mla_r_cast<mla_linux_ssl_context_t*>(mla_platform_malloc(sizeof(mla_linux_ssl_context_t)));
+    if (ssl_conn_ctx == nullptr) {
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+        mla_network_connection_disconnect(connection);
+        return false;
+    }
+
+    ssl_conn_ctx->sock = sock;
+    ssl_conn_ctx->ssl = ssl;
+
+    // Disown raw socket cleanup from old input stream
+    mla_user_data_set_native_resource(connection.inputStream.userdata, mla_private_network_connection_user_data_id(), mla_dynamic_data_from_int32(-1), nullptr);
+
+    mla_user_data_t ssl_user_data = mla_user_data_empty();
+    mla_user_data_set_native_resource(ssl_user_data, mla_private_network_ssl_connection_user_data_id(), mla_dynamic_data_from_pointer(ssl_conn_ctx), mla_linux_ssl_socket_cleanup);
+
+    connection.inputStream = {
+        ssl_user_data,
+        mla_linux_ssl_socket_read,
+        mla_linux_ssl_socket_remaining_bytes
+    };
+
+    connection.outputStream = {
+        ssl_user_data,
+        mla_linux_ssl_socket_write,
+        nullptr
+    };
+
+    return true;
+#else
+    (void)connection;
+    (void)host;
+    (void)type;
+    (void)timeout_ms;
+    (void)security_config;
     return false;
+#endif
 }
 
 mla_bool_t mla_linux_accept_connection(const mla_network_listener_t& listener, mla_network_connection_t &connection) {
-    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(listener.userdata, mla_network_connection_user_data_name);
+    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(listener.userdata, mla_private_network_connection_user_data_id());
     int listenSock = socket_data.asInt32;
     if (listenSock < 0) {
         return false;
@@ -334,7 +604,7 @@ mla_bool_t mla_linux_accept_connection(const mla_network_listener_t& listener, m
     connection.host = peer;
 
     mla_user_data_t userData = mla_user_data_empty();
-    mla_user_data_set_native_resource(userData, mla_network_connection_user_data_name, mla_dynamic_data_from_int32(clientSock), mla_linux_socket_cleanup);
+    mla_user_data_set_native_resource(userData, mla_private_network_connection_user_data_id(), mla_dynamic_data_from_int32(clientSock), mla_linux_socket_cleanup);
 
     connection.inputStream = {
         userData,
@@ -422,7 +692,7 @@ mla_bool_t mla_linux_bind_and_listen(mla_network_listener_t &listener, const mla
     }
 
     mla_user_data_t userData = mla_user_data_empty();
-    mla_user_data_set_native_resource(userData, mla_network_connection_user_data_name, mla_dynamic_data_from_int32(sock), mla_linux_socket_cleanup);
+    mla_user_data_set_native_resource(userData, mla_private_network_connection_user_data_id(), mla_dynamic_data_from_int32(sock), mla_linux_socket_cleanup);
 
     listener.accept_connection = mla_linux_accept_connection;
     listener.userdata = userData;

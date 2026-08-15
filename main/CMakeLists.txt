@@ -30,12 +30,25 @@ function(configure_zlib_for_target target_name)
     endif()
 endfunction()
 
+# Helper: link OpenSSL and set feature flag compile definition for target
+function(configure_openssl_for_target target_name)
+    if(OPENSSL_SSL_LIB AND OPENSSL_CRYPTO_LIB AND OPENSSL_INCLUDE_DIR AND NOT (CMAKE_CXX_COMPILER MATCHES "fil\\+\\+"))
+        target_link_libraries(${target_name} PRIVATE ${OPENSSL_SSL_LIB} ${OPENSSL_CRYPTO_LIB})
+        target_include_directories(${target_name} PRIVATE ${OPENSSL_INCLUDE_DIR})
+        target_compile_definitions(${target_name} PRIVATE MLA_HAS_OPENSSL=1)
+    endif()
+endfunction()
+
 
 ##########################################################
 ## LINUX
 ##########################################################
 
 if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+
+    find_path(OPENSSL_INCLUDE_DIR NAMES openssl/ssl.h PATHS /usr/include /usr/local/include /opt/emsdk/node/22.16.0_64bit/include/node)
+    find_library(OPENSSL_SSL_LIB NAMES ssl libssl libssl.so.3 libssl.so PATHS /usr/lib/x86_64-linux-gnu /usr/lib)
+    find_library(OPENSSL_CRYPTO_LIB NAMES crypto libcrypto libcrypto.so.3 libcrypto.so PATHS /usr/lib/x86_64-linux-gnu /usr/lib)
 
     ## TEST SINGLE THREAD
     ############################
@@ -51,6 +64,7 @@ if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
     add_executable(MLA_C_Test_Linux_Single_Thread ${SOURCE_FILES_LINUX_SINGLE_THREAD})
     target_link_libraries(MLA_C_Test_Linux_Single_Thread PRIVATE ${CMAKE_DL_LIBS})
     configure_zlib_for_target(MLA_C_Test_Linux_Single_Thread)
+    configure_openssl_for_target(MLA_C_Test_Linux_Single_Thread)
 
     ## LINUX TEST MULTI THREAD
     ############################
@@ -67,6 +81,7 @@ if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
     mla_enable_clang_tidy(MLA_C_Test_Linux_Multi_Thread)
     target_link_libraries(MLA_C_Test_Linux_Multi_Thread PRIVATE ${CMAKE_DL_LIBS})
     configure_zlib_for_target(MLA_C_Test_Linux_Multi_Thread)
+    configure_openssl_for_target(MLA_C_Test_Linux_Multi_Thread)
 
     ## APP
     ############################
@@ -81,6 +96,7 @@ if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
     )
     add_executable(MLA_C_App_Linux ${SOURCE_FILES_LINUX_APP})
     target_link_libraries(MLA_C_App_Linux PRIVATE ${CMAKE_DL_LIBS})
+    configure_openssl_for_target(MLA_C_App_Linux)
 
 endif()
 

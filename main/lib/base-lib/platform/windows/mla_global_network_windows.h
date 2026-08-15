@@ -11,7 +11,10 @@
 #include "iphlpapi.h"
 #include <cstdio>
 
-mla_user_data_id_init(mla_network_connection_user_data_name)
+inline mla_user_data_id mla_private_network_connection_user_data_id() {
+    static const mla_user_data_id id = mla_get_next_user_data_id();
+    return id;
+}
 
 mla_bool_t mla_private_windows_resolve_host(mla_network_host_t &host, const mla_string_t &hostname, mla_uint16_t port) {
     WSADATA wsaData;
@@ -80,7 +83,7 @@ void mla_private_windows_socket_cleanup(const mla_dynamic_data_t& userData) {
 mla_size_t mla_private_windows_socket_read(mla_stream_input_t& input, mla_size_t offset, mla_size_t length, mla_byte_t* buffer) {
 
     (void)offset;
-    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(input.userdata, mla_network_connection_user_data_name);
+    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(input.userdata, mla_private_network_connection_user_data_id());
     SOCKET sock =mla_s_cast<SOCKET>(socket_data.asUint64);
     if (sock == INVALID_SOCKET) {
         return 0;
@@ -96,7 +99,7 @@ mla_size_t mla_private_windows_socket_read(mla_stream_input_t& input, mla_size_t
 
 mla_size_t mla_private_windows_socket_remaining_bytes(mla_stream_input_t& input) {
 
-    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(input.userdata, mla_network_connection_user_data_name);
+    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(input.userdata, mla_private_network_connection_user_data_id());
 
     SOCKET sock = mla_s_cast<SOCKET>(socket_data.asUint64);
     if (sock == INVALID_SOCKET) {
@@ -116,7 +119,7 @@ mla_size_t mla_private_windows_socket_remaining_bytes(mla_stream_input_t& input)
 
 mla_size_t mla_private_windows_socket_write(mla_stream_output_t& output, mla_size_t offset, mla_size_t length, const mla_byte_t* buffer) {
     (void)offset;
-    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(output.userdata, mla_network_connection_user_data_name);
+    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(output.userdata, mla_private_network_connection_user_data_id());
 
     SOCKET sock = mla_s_cast<SOCKET>(socket_data.asUint64);
     if (sock == INVALID_SOCKET) {
@@ -248,7 +251,7 @@ mla_bool_t mla_private_windows_connect(mla_network_connection_t &connection, con
     }
 
     mla_user_data_t userData = mla_user_data_empty();
-    mla_user_data_set_native_resource(userData, mla_network_connection_user_data_name, mla_dynamic_data_from_uint64(sock), mla_private_windows_socket_cleanup);
+    mla_user_data_set_native_resource(userData, mla_private_network_connection_user_data_id(), mla_dynamic_data_from_uint64(sock), mla_private_windows_socket_cleanup);
 
     connection.inputStream = {
         userData,
@@ -280,7 +283,7 @@ mla_bool_t mla_private_windows_connect_secure(
 
 mla_bool_t mla_private_windows_accept_connection(const mla_network_listener_t& listener, mla_network_connection_t &connection) {
 
-    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(listener.userdata, mla_network_connection_user_data_name);
+    mla_dynamic_data_t socket_data = mla_user_data_get_native_resource(listener.userdata, mla_private_network_connection_user_data_id());
 
     SOCKET listenSock = mla_s_cast<SOCKET>(socket_data.asUint64);
 
@@ -342,7 +345,7 @@ mla_bool_t mla_private_windows_accept_connection(const mla_network_listener_t& l
     connection.host = peer;
 
     mla_user_data_t userData = mla_user_data_empty();
-    mla_user_data_set_native_resource(userData, mla_network_connection_user_data_name, mla_dynamic_data_from_uint64(clientSock), mla_private_windows_socket_cleanup);
+    mla_user_data_set_native_resource(userData, mla_private_network_connection_user_data_id(), mla_dynamic_data_from_uint64(clientSock), mla_private_windows_socket_cleanup);
 
 
     connection.inputStream = {
@@ -439,7 +442,7 @@ mla_bool_t mla_private_windows_bind_and_listen(mla_network_listener_t &listener,
     }
 
     mla_user_data_t userData = mla_user_data_empty();
-    mla_user_data_set_native_resource(userData, mla_network_connection_user_data_name, mla_dynamic_data_from_uint64(sock), mla_private_windows_socket_cleanup);
+    mla_user_data_set_native_resource(userData, mla_private_network_connection_user_data_id(), mla_dynamic_data_from_uint64(sock), mla_private_windows_socket_cleanup);
     listener.accept_connection = mla_private_windows_accept_connection;
     listener.userdata = userData;
 

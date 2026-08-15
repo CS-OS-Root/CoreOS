@@ -12,6 +12,7 @@ You are working in the `mla-core/main` repository, which contains the `mla-c` fr
    - Use MLA data types defined in `mla_data_types.h` (e.g., `mla_int32_t`, `mla_char_t`).
    - Use MLA framework containers like `mla_array_list_t` and `mla_string_t`.
    - **NEVER** include standard headers like `<string>`, `<vector>`, `<stdlib.h>`, or `<stdio.h>`.
+   - **Platform Modules Exception**: Platform implementations (code under `platform/` or platform-specific abstraction code interfacing directly with OS headers/APIs) are permitted to use standard platform C primitives (`int`, `char`, `const char*`, socket types, etc.) as required by OS headers and native APIs.
 4. **Data Ownership**: Use `mla_pointer_t` for owning heap-allocated data. It provides automatic reference-counted cleanup. Use `mla_platform_pointer_t` (raw void pointer) strictly for short-lived, non-owning data access.
 6. **DOCUMENTATION**: 
     - Write clear and concise documentation for all public APIs and data structures.
