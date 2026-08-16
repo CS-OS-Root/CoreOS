@@ -163,6 +163,8 @@ mla_bool_t mla_private_update_http_get_last_version(const mla_update_provider_t&
         prefix = mla_string_concat(prefix, mla_string_const("/"));
     }
 
+    mla_string_t best_version = mla_string_empty();
+
     // Try direct module version endpoint: ${base_url}/${module}/version
     mla_string_t url_version = prefix;
     if (mla_string_length(module_name) > 0) {
@@ -181,23 +183,7 @@ mla_bool_t mla_private_update_http_get_last_version(const mla_update_provider_t&
         mla_stream_input_t content_stream = client_res.response.content;
         mla_string_t version_raw = mla_string_trim(mla_string_from_stream(content_stream, 10000));
         if (mla_string_length(version_raw) > 0) {
-            p_OutVersion = version_raw;
-            return true;
-        }
-    }
-
-    // Try root version endpoint fallback: ${base_url}/version
-    if (mla_string_length(module_name) > 0) {
-        mla_string_t url_root_version = mla_string_concat(prefix, mla_string_const("version"));
-        request = mla_http_get_request(url_root_version);
-        client_res = mla_http_client_send_request(client, request);
-        if (client_res.status == MLA_HTTP_CLIENT_RESPONSE_STATUS_OK && client_res.response.statusCode == 200) {
-            mla_stream_input_t content_stream = client_res.response.content;
-            mla_string_t version_raw = mla_string_trim(mla_string_from_stream(content_stream, 10000));
-            if (mla_string_length(version_raw) > 0) {
-                p_OutVersion = version_raw;
-                return true;
-            }
+            best_version = version_raw;
         }
     }
 
@@ -217,9 +203,15 @@ mla_bool_t mla_private_update_http_get_last_version(const mla_update_provider_t&
         mla_string_t raw_content = mla_string_from_stream(content_stream, 100000);
         mla_string_t extracted = mla_private_update_extract_latest_version(raw_content);
         if (mla_string_length(extracted) > 0) {
-            p_OutVersion = extracted;
-            return true;
+            if (mla_string_length(best_version) == 0 || mla_private_update_compare_versions(extracted, best_version) > 0) {
+                best_version = extracted;
+            }
         }
+    }
+
+    if (mla_string_length(best_version) > 0) {
+        p_OutVersion = best_version;
+        return true;
     }
 
     return false;
