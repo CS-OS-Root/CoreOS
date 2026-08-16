@@ -1,7 +1,13 @@
 [CmdletBinding()]
 param (
-    [string]$TargetConfig = ""
+    [string]$TargetConfig = "",
+    [ValidateSet("regular", "deep")]
+    [string]$Mode = ""
 )
+
+if ($Mode) {
+    $global:BENCHMARK_MODE = $Mode
+}
 
 if (-not $global:WORKSPACE_DIR) {
     $global:WORKSPACE_DIR = (Resolve-Path "$PSScriptRoot\..\..\..\..").Path
@@ -19,6 +25,8 @@ $passedCount = 0
 $failedCount = 0
 $skippedCount = 0
 $failedSuites = [System.Collections.Generic.List[string]]::new()
+
+$currentMode = if ($global:BENCHMARK_MODE) { $global:BENCHMARK_MODE } else { "regular" }
 
 foreach ($suite in $global:RUN_SUITES) {
     $parts = $suite.Split(';')
@@ -53,7 +61,7 @@ foreach ($suite in $global:RUN_SUITES) {
     }
 
     Write-Host "========================================================================" -ForegroundColor Cyan
-    Write-Host "Running Benchmarks: $configName" -ForegroundColor Cyan
+    Write-Host "Running Benchmarks: $configName (Mode: $currentMode)" -ForegroundColor Cyan
     Write-Host "Runner:             $runnerType"
     Write-Host "Binary:             $fullBinaryPath"
     Write-Host "========================================================================" -ForegroundColor Cyan

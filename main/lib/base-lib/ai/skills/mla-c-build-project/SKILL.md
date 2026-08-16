@@ -103,20 +103,27 @@ By default, this will run all registered benchmarks and print the timing results
 > [!WARNING]
 > Benchmarks are slow and can take several minutes to run, especially for all configurations.
 
-To run all benchmarks across all compiled compiler configurations automatically, use the helper script:
+To run all benchmarks across all compiled compiler configurations automatically in regular (fast) mode:
 
 ```bash
 ./run_all_benchmarks.sh
+```
+
+To run in deep (comprehensive profiling) mode:
+
+```bash
+./run_all_benchmarks.sh --deep
 ```
 
 You can also run benchmarks for a specific compiler configuration by passing its name:
 
 ```bash
 ./run_all_benchmarks.sh gcc
+./run_all_benchmarks.sh gcc --deep
 ```
 
 > [!NOTE]
-> `run_all_benchmarks.sh` (via `run_benchmarks_impl.sh`) automatically executes `build_all_impl.sh` to compile the target configuration before running benchmarks.
+> `run_all_benchmarks.sh` (via `run_benchmarks_impl.sh`) automatically executes `build_all_impl.sh` to compile the target configuration before running benchmarks. You can also select the mode via the `BENCHMARK_MODE=deep` environment variable.
 
 ---
 
@@ -150,4 +157,4 @@ cmake -DMLA_ENABLE_CLANG_TIDY=OFF -B build
 1. **Never commit build artifacts** (always use `build/` directory which is gitignored).
 2. **Never check in custom binary files or main templates.**
 3. Verify that all tests pass locally before proposing changes.
-4. **Definition of Done**: At the end of every task, all unit tests (`./run_all_tests.sh`) and all benchmarks (`./run_all_benchmarks.sh`) MUST be executed and pass successfully across all supported compiler toolchains before declaring success.
+4. **Definition of Done**: At the end of every task, all unit tests (`./run_all_tests.sh`) and all benchmarks in regular mode (`./run_all_benchmarks.sh`) MUST be executed and pass successfully across all supported compiler toolchains before declaring success (running in deep mode is optional and not required for DoD). The benchmark results must be summarized and checked for performance regressions related to the changes.

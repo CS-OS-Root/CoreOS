@@ -51,4 +51,5 @@ When conducting a code review of modified or newly added code:
 
 ### 5. Definition of Done & Verification
 - [ ] **Automated Tests**: Execute `./run_all_tests.sh` across toolchains and confirm 0 failed tests.
-- [ ] **Benchmarks**: Execute `./run_all_benchmarks.sh` across toolchains and confirm all benchmark suites complete cleanly.
+- [ ] **Benchmarks**: Execute `./run_all_benchmarks.sh` (regular mode) across toolchains and confirm all benchmark suites complete cleanly (deep mode is optional).
+- [ ] **Regression Check**: Summarize benchmark metrics and verify there are no performance regressions related to the changes.

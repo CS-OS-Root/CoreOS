@@ -25,8 +25,9 @@ fi
 
 # Find Node.js (honour NODE_BIN if set, then emsdk node, then system node)
 if [ -z "$NODE_BIN" ]; then
-    if [ -f "/opt/emsdk/node/22.16.0_64bit/bin/node" ]; then
-        NODE_BIN="/opt/emsdk/node/22.16.0_64bit/bin/node"
+    emsdk_node=$(ls -d /opt/emsdk/node/*/bin/node 2>/dev/null | head -n 1)
+    if [ -n "$emsdk_node" ] && [ -f "$emsdk_node" ]; then
+        NODE_BIN="$emsdk_node"
     elif command -v node >/dev/null 2>&1; then
         NODE_BIN="node"
     else

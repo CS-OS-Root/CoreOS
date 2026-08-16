@@ -46,7 +46,7 @@ endfunction()
 
 if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
 
-    find_path(OPENSSL_INCLUDE_DIR NAMES openssl/ssl.h PATHS /usr/include /usr/local/include /opt/emsdk/node/22.16.0_64bit/include/node)
+    find_path(OPENSSL_INCLUDE_DIR NAMES openssl/ssl.h PATHS /usr/include /usr/local/include /opt/emsdk/node/24.19.0_64bit/include/node /opt/emsdk/node/22.16.0_64bit/include/node)
     find_library(OPENSSL_SSL_LIB NAMES ssl libssl libssl.so.3 libssl.so PATHS /usr/lib/x86_64-linux-gnu /usr/lib)
     find_library(OPENSSL_CRYPTO_LIB NAMES crypto libcrypto libcrypto.so.3 libcrypto.so PATHS /usr/lib/x86_64-linux-gnu /usr/lib)
 

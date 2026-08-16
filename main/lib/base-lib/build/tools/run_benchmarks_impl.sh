@@ -6,12 +6,29 @@ if [ -z "$WORKSPACE_DIR" ]; then
 fi
 
 target_config=""
-if [ -n "$1" ]; then
-    target_config="$1"
-fi
+for arg in "$@"; do
+    case "$arg" in
+        --deep|deep)
+            BENCHMARK_MODE="deep"
+            ;;
+        --regular|regular)
+            BENCHMARK_MODE="regular"
+            ;;
+        --mode=*)
+            BENCHMARK_MODE="${arg#*=}"
+            ;;
+        *)
+            if [ -z "$target_config" ]; then
+                target_config="$arg"
+            fi
+            ;;
+    esac
+done
+
+export BENCHMARK_MODE
 
 # Execute build phase before running benchmarks
-source "${WORKSPACE_DIR}/lib/base-lib/build/tools/build_all_impl.sh" "$@"
+source "${WORKSPACE_DIR}/lib/base-lib/build/tools/build_all_impl.sh" "$target_config"
 build_exit_code=$?
 if [ $build_exit_code -ne 0 ]; then
     echo "Error: Build phase failed with exit code $build_exit_code — aborting benchmarks."
@@ -40,7 +57,7 @@ for suite in "${RUN_SUITES[@]}"; do
     fi
 
     echo "========================================================================"
-    echo "Running Benchmarks: $config_name"
+    echo "Running Benchmarks: $config_name (Mode: ${BENCHMARK_MODE:-regular})"
     echo "Runner:             $runner_type"
     echo "Binary:             $full_binary_path"
     echo "========================================================================"

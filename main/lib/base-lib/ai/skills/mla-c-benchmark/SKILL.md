@@ -152,20 +152,36 @@ volatile mla_byte_t temp = buffer[0];
 
 ## Running Benchmarks
 
-To execute all benchmark suites across compiler configurations:
+The benchmark runner supports two execution modes:
+- **Regular Mode (`regular`, default)**: Optimized fast execution mode designed for CI and rapid regression testing (5,000 iterations for standard/WASM targets, 500 for filc).
+- **Deep Mode (`deep` / `--deep`)**: Comprehensive profiling mode using high iteration counts (10,000 iterations for standard/WASM targets, 1,000 for filc).
+
+To execute all benchmark suites in regular mode:
 
 ```bash
 ./run_all_benchmarks.sh
 ```
 
-Or for a specific compiler configuration:
+Or in deep mode:
+
+```bash
+./run_all_benchmarks.sh --deep
+```
+
+For a specific compiler configuration in regular mode:
 
 ```bash
 ./run_all_benchmarks.sh gcc
 ```
 
+For a specific compiler configuration in deep mode:
+
+```bash
+./run_all_benchmarks.sh gcc --deep
+```
+
 > [!NOTE]
-> `run_all_benchmarks.sh` (via `run_benchmarks_impl.sh`) automatically executes `build_all_impl.sh` to compile the project before running benchmark suites.
+> `run_all_benchmarks.sh` (via `run_benchmarks_impl.sh`) automatically executes `build_all_impl.sh` to compile the project before running benchmark suites. You can also select the mode via the `BENCHMARK_MODE=deep` environment variable.
 
 ## Rules
 
