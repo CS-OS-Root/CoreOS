@@ -49,6 +49,10 @@ inline mla_update_error_t mla_private_update_windows_upgrade_to_version(mla_stre
         out.write(out, 0, read_bytes, buffer);
     }
 
+    if (fs.close_file != nullptr) {
+        fs.close_file(fs, out_fs_stream);
+    }
+
     mla_string_t cmdline = mla_string_concat(temp_binary_path, mla_string_const(" --mla-apply-update \""));
     cmdline = mla_string_concat(cmdline, current_exe_path);
     cmdline = mla_string_concat(cmdline, mla_string_const("\""));
@@ -106,6 +110,11 @@ inline mla_bool_t mla_update_check_and_apply_pending_update(int argc, char** arg
     mla_size_t read_bytes = 0;
     while ((read_bytes = in.read(in, 0, sizeof(buffer), buffer)) > 0) {
         out.write(out, 0, read_bytes, buffer);
+    }
+
+    if (fs.close_file != nullptr) {
+        fs.close_file(fs, in_fs_stream);
+        fs.close_file(fs, out_fs_stream);
     }
 
     mla_string_t restart_cmdline = target_path;

@@ -48,6 +48,9 @@ inline mla_update_error_t mla_private_update_linux_upgrade_to_version(mla_stream
         out.write(out, 0, read_bytes, buffer);
     }
 
+    out = mla_stream_noop_output();
+    out_fs_stream = mla_file_system_stream_empty();
+
     mla_c_string_t temp_c_path = mla_string_to_cString(temp_binary_path);
     const mla_char_t* temp_str = mla_c_string_data(temp_c_path);
     if (temp_str != nullptr) {
@@ -58,9 +61,19 @@ inline mla_update_error_t mla_private_update_linux_upgrade_to_version(mla_stream
     cmdline = mla_string_concat(cmdline, current_exe_path);
     cmdline = mla_string_concat(cmdline, mla_string_const("\""));
 
-    mla_external_task_t task = mla_external_task_create(cmdline);
-    if (mla_pointer_is_null(task.native_resource)) {
+    pid_t pid = fork();
+    if (pid < 0) {
         return MLA_UPDATE_ERROR_SPAWN_FAILED;
+    }
+
+    if (pid == 0) {
+        setsid();
+        mla_c_string_t cmdlineCStr = mla_string_to_cString(cmdline);
+        const mla_char_t* cmdline_str = mla_c_string_data(cmdlineCStr);
+        if (cmdline_str != nullptr) {
+            execl("/bin/sh", "sh", "-c", cmdline_str, nullptr);
+        }
+        _exit(1);
     }
 
     return MLA_UPDATE_SUCCESS;
@@ -100,6 +113,13 @@ inline mla_bool_t mla_update_check_and_apply_pending_update(int argc, char** arg
     mla_file_system_stream_t in_fs_stream = mla_file_system_stream_empty();
     mla_file_system_stream_t out_fs_stream = mla_file_system_stream_empty();
 
+    mla_c_string_t target_c_path = mla_string_to_cString(target_path);
+    const mla_char_t* target_str = mla_c_string_data(target_c_path);
+
+    if (target_str != nullptr) {
+        unlink(target_str);
+    }
+
     if (fs.open_file == nullptr ||
         !fs.open_file(fs, own_temp_path, MLA_FILE_SYSTEM_FILE_OPEN_MODE_READ, in_fs_stream) ||
         !fs.open_file(fs, target_path, MLA_FILE_SYSTEM_FILE_OPEN_MODE_WRITE, out_fs_stream)) {
@@ -114,19 +134,25 @@ inline mla_bool_t mla_update_check_and_apply_pending_update(int argc, char** arg
         out.write(out, 0, read_bytes, buffer);
     }
 
-    mla_c_string_t target_c_path = mla_string_to_cString(target_path);
-    const mla_char_t* target_str = mla_c_string_data(target_c_path);
+    in = mla_stream_noop_input();
+    out = mla_stream_noop_output();
+    in_fs_stream = mla_file_system_stream_empty();
+    out_fs_stream = mla_file_system_stream_empty();
+
     if (target_str != nullptr) {
         chmod(target_str, 0755);
     }
 
-    mla_string_t restart_cmdline = target_path;
-    mla_external_task_t task = mla_external_task_create(restart_cmdline);
-    if (!mla_pointer_is_null(task.native_resource)) {
-        exit(0);
+    pid_t restart_pid = fork();
+    if (restart_pid == 0) {
+        setsid();
+        if (target_str != nullptr) {
+            execl(target_str, target_str, nullptr);
+        }
+        _exit(1);
     }
 
-    return true;
+    exit(0);
 }
 
 mla_update_management_t g_update_management = {
