@@ -33,6 +33,7 @@ struct mla_http_client_t {
     mla_int32_t timeout_ms;
     mla_bool_t (*resolve_host)(const mla_http_client_t &client, mla_http_client_response_t& response, const mla_url_t& url, mla_network_host_t & host);
     mla_bool_t (*connect)(const mla_http_client_t &client, mla_http_client_response_t& response, const mla_network_host_t & host, mla_network_connection_t & connection);
+    mla_network_tls_config_t tls_config;
 };
 
 mla_http_client_t mla_http_client();
@@ -45,6 +46,10 @@ void mla_http_client_set_support_gzip_compression(mla_http_client_t &client, mla
 
 mla_int32_t mla_http_client_get_timeout(const mla_http_client_t &client);
 void mla_http_client_set_timeout(mla_http_client_t &client, mla_int32_t timeout_ms);
+
+mla_network_tls_config_t mla_http_client_get_tls_config(const mla_http_client_t &client);
+void mla_http_client_set_tls_config(mla_http_client_t &client, const mla_network_tls_config_t &tls_config);
+void mla_http_client_set_verify_peer(mla_http_client_t &client, mla_bool_t verify_peer);
 
 mla_http_client_response_t mla_http_client_send_request(const mla_http_client_t &client, mla_http_request_t &p_Request);
 

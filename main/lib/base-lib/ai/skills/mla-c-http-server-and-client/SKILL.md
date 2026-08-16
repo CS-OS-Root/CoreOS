@@ -316,6 +316,25 @@ mla_http_request_t request = mla_http_get_request(
 mla_http_client_response_t result = mla_http_client_send_request(request);
 ```
 
+#### Custom TLS Configuration on Client
+
+You can configure TLS options such as peer verification, custom CA certificates, or client certificates:
+
+```cpp
+mla_http_client_t client = mla_http_client();
+
+// Disable peer verification (e.g. for self-signed development certificates)
+mla_http_client_set_verify_peer(client, false);
+
+// Or configure full TLS settings
+mla_network_tls_config_t tls = mla_network_tls_config_default();
+mla_network_tls_config_set_ca_certificate(tls, custom_ca_pem);
+mla_network_tls_config_set_verify_peer(tls, true);
+mla_http_client_set_tls_config(client, tls);
+
+mla_http_client_response_t result = mla_http_client_send_request(client, request);
+```
+
 ### WSS Client Connections
 
 `mla_websocket_client_connect` selects secure transport automatically for `wss://` URLs.

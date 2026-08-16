@@ -23,6 +23,8 @@
 #if defined(MLA_HAS_OPENSSL) && MLA_HAS_OPENSSL == 1
 #include <openssl/ssl.h>
 #include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/x509.h>
 #endif
 
 inline mla_user_data_id mla_private_network_connection_user_data_id() {
@@ -88,12 +90,16 @@ inline mla_size_t mla_linux_ssl_socket_read(mla_stream_input_t& input, mla_size_
         FD_ZERO(&fds);
         FD_SET(ssl_ctx->sock, &fds);
         struct timeval tv;
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
+        tv.tv_sec = 0;
+        tv.tv_usec = 50000;
         if (err == SSL_ERROR_WANT_READ) {
             select(ssl_ctx->sock + 1, &fds, nullptr, nullptr, &tv);
         } else {
             select(ssl_ctx->sock + 1, nullptr, &fds, nullptr, &tv);
+        }
+        int retryBytes = SSL_read(ssl_ctx->ssl, mla_r_cast<char*>(buffer) + offset, mla_s_cast<int>(length));
+        if (retryBytes > 0) {
+            return mla_s_cast<mla_size_t>(retryBytes);
         }
     }
 
@@ -457,6 +463,9 @@ mla_bool_t mla_linux_connect_secure(
         const mla_char_t* c_str = mla_c_string_data(c_server_name);
         if (c_str != nullptr) {
             SSL_set_tlsext_host_name(ssl, c_str);
+            if (mla_network_tls_config_get_verify_host_name(tls_config)) {
+                SSL_set1_host(ssl, c_str);
+            }
         }
     }
 
@@ -464,6 +473,55 @@ mla_bool_t mla_linux_connect_secure(
         SSL_set_verify(ssl, SSL_VERIFY_PEER, nullptr);
     } else {
         SSL_set_verify(ssl, SSL_VERIFY_NONE, nullptr);
+    }
+
+    mla_string_t ca_cert = mla_network_tls_config_get_ca_certificate(tls_config);
+    if (!mla_string_is_empty(ca_cert)) {
+        mla_c_string_t c_ca_cert = mla_string_to_cString(ca_cert);
+        const mla_char_t* ca_str = mla_c_string_data(c_ca_cert);
+        if (ca_str != nullptr) {
+            BIO* bio = BIO_new_mem_buf(ca_str, -1);
+            if (bio != nullptr) {
+                X509* cert = PEM_read_bio_X509(bio, nullptr, nullptr, nullptr);
+                if (cert != nullptr) {
+                    X509_STORE* store = SSL_CTX_get_cert_store(ssl_ctx);
+                    if (store != nullptr) {
+                        X509_STORE_add_cert(store, cert);
+                    }
+                    X509_free(cert);
+                }
+                BIO_free(bio);
+            }
+        }
+    }
+
+    mla_string_t client_cert = mla_network_tls_config_get_certificate(tls_config);
+    mla_string_t client_key = mla_network_tls_config_get_private_key(tls_config);
+    if (!mla_string_is_empty(client_cert) && !mla_string_is_empty(client_key)) {
+        mla_c_string_t c_client_cert = mla_string_to_cString(client_cert);
+        mla_c_string_t c_client_key = mla_string_to_cString(client_key);
+        const mla_char_t* p_cert = mla_c_string_data(c_client_cert);
+        const mla_char_t* p_key = mla_c_string_data(c_client_key);
+        if (p_cert != nullptr && p_key != nullptr) {
+            BIO* cert_bio = BIO_new_mem_buf(p_cert, -1);
+            if (cert_bio != nullptr) {
+                X509* cert = PEM_read_bio_X509(cert_bio, nullptr, nullptr, nullptr);
+                if (cert != nullptr) {
+                    SSL_use_certificate(ssl, cert);
+                    X509_free(cert);
+                }
+                BIO_free(cert_bio);
+            }
+            BIO* key_bio = BIO_new_mem_buf(p_key, -1);
+            if (key_bio != nullptr) {
+                EVP_PKEY* pkey = PEM_read_bio_PrivateKey(key_bio, nullptr, nullptr, nullptr);
+                if (pkey != nullptr) {
+                    SSL_use_PrivateKey(ssl, pkey);
+                    EVP_PKEY_free(pkey);
+                }
+                BIO_free(key_bio);
+            }
+        }
     }
 
     mla_bool_t handshake_done = false;
@@ -517,8 +575,18 @@ mla_bool_t mla_linux_connect_secure(
     ssl_conn_ctx->sock = sock;
     ssl_conn_ctx->ssl = ssl;
 
-    // Disown raw socket cleanup from old input stream
-    mla_user_data_set_native_resource(connection.inputStream.userdata, mla_private_network_connection_user_data_id(), mla_dynamic_data_from_int32(-1), nullptr);
+    // Disown raw socket cleanup from old input and output streams so they don't close the socket
+    mla_pointer_t in_ptr = mla_user_data_get_pointer(connection.inputStream.userdata, mla_private_network_connection_user_data_id());
+    mla_native_resource_t* in_res = mla_native_resource_from_managed_pointer(in_ptr);
+    if (in_res != nullptr) {
+        in_res->asInt32 = -1;
+    }
+
+    mla_pointer_t out_ptr = mla_user_data_get_pointer(connection.outputStream.userdata, mla_private_network_connection_user_data_id());
+    mla_native_resource_t* out_res = mla_native_resource_from_managed_pointer(out_ptr);
+    if (out_res != nullptr) {
+        out_res->asInt32 = -1;
+    }
 
     mla_user_data_t ssl_user_data = mla_user_data_empty();
     mla_user_data_set_native_resource(ssl_user_data, mla_private_network_ssl_connection_user_data_id(), mla_dynamic_data_from_pointer(ssl_conn_ctx), mla_linux_ssl_socket_cleanup);
