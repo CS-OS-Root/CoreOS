@@ -49,7 +49,8 @@ mla_http_client_t mla_http_client() {
 
         mla_global_config_default_http_timeout_ms, // Default timeout 30 seconds
         mla_private_http_client_default_resolve_host,
-        mla_private_http_client_default_connect
+        mla_private_http_client_default_connect,
+        mla_network_tls_config_default()
     };
 }
 
@@ -75,6 +76,18 @@ mla_int32_t mla_http_client_get_timeout(const mla_http_client_t &client) {
 
 void mla_http_client_set_timeout(mla_http_client_t &client, mla_int32_t timeout_ms) {
     client.timeout_ms = timeout_ms;
+}
+
+mla_network_tls_config_t mla_http_client_get_tls_config(const mla_http_client_t &client) {
+    return client.tls_config;
+}
+
+void mla_http_client_set_tls_config(mla_http_client_t &client, const mla_network_tls_config_t &tls_config) {
+    client.tls_config = tls_config;
+}
+
+void mla_http_client_set_verify_peer(mla_http_client_t &client, mla_bool_t verify_peer) {
+    mla_network_tls_config_set_verify_peer(client.tls_config, verify_peer);
 }
 
 mla_bool_t mla_private_http_client_is_https_url(const mla_url_t &url) {
@@ -114,8 +127,10 @@ mla_bool_t mla_private_http_client_connect(const mla_http_client_t &client, mla_
     mla_network_security_config_t security_config = mla_network_security_config_none();
 
     if (mla_private_http_client_is_https_url(url)) {
-        mla_network_tls_config_t tls_config = mla_network_tls_config_default();
-        mla_network_tls_config_set_server_name(tls_config, url.host);
+        mla_network_tls_config_t tls_config = client.tls_config;
+        if (mla_string_is_empty(mla_network_tls_config_get_server_name(tls_config))) {
+            mla_network_tls_config_set_server_name(tls_config, url.host);
+        }
         security_config = mla_network_security_config_tls(tls_config);
     }
 
@@ -398,6 +413,10 @@ mla_http_client_response_t mla_http_client_send_request(const mla_http_client_t 
     if (!mla_private_http_client_send_header(response, url, p_Request, bufferedOutputStream)) {
         mla_stream_output_flush_buffered_wrapper(bufferedOutputStream);
         mla_private_http_client_close_connection(connection);
+        if (response.status == MLA_HTTP_CLIENT_RESPONSE_STATUS_OK) {
+            response.status = MLA_HTTP_CLIENT_RESPONSE_STATUS_ERROR_UNKNOWN;
+            response.errorMessage = mla_string_const("Failed to send request header");
+        }
         return response;
     }
 
@@ -405,12 +424,18 @@ mla_http_client_response_t mla_http_client_send_request(const mla_http_client_t 
     if (!mla_private_http_client_send_body(response, p_Request, bufferedOutputStream)) {
         mla_stream_output_flush_buffered_wrapper(bufferedOutputStream);
         mla_private_http_client_close_connection(connection);
+        if (response.status == MLA_HTTP_CLIENT_RESPONSE_STATUS_OK) {
+            response.status = MLA_HTTP_CLIENT_RESPONSE_STATUS_ERROR_UNKNOWN;
+            response.errorMessage = mla_string_const("Failed to send request body");
+        }
         return response;
     }
 
     // Close and Flush
     if (!mla_stream_output_flush_buffered_wrapper(bufferedOutputStream)) {
         mla_private_http_client_close_connection(connection);
+        response.status = MLA_HTTP_CLIENT_RESPONSE_STATUS_ERROR_UNKNOWN;
+        response.errorMessage = mla_string_const("Failed to flush request output stream");
         return response;
     }
     bufferedOutputStream = mla_stream_noop_output();
@@ -422,6 +447,8 @@ mla_http_client_response_t mla_http_client_send_request(const mla_http_client_t 
     // Parse Response Header
     if (!mla_private_http_client_parse_response_header(connection.inputStream, response.response, client.timeout_ms)) {
         mla_private_http_client_close_connection(connection);
+        response.status = MLA_HTTP_CLIENT_RESPONSE_STATUS_ERROR_INVALID_RESPONSE;
+        response.errorMessage = response.response.statusMessage;
         return response;
     }
 

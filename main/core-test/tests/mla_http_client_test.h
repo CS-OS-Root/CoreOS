@@ -419,12 +419,59 @@ void HttpsClientConnectFlowTest() {
     response = mla_http_client_response_invalid();
 }
 
+void SimpleHttpsGetRequestTest() {
+#if defined(MLA_HAS_OPENSSL) && MLA_HAS_OPENSSL == 1
+    mla_http_request_t request = mla_http_request(mla_string_const("https://example.com"), mla_http_method_get);
+    mla_http_client_t client = mla_http_client();
+    mla_http_client_set_timeout(client, 10000);
+
+    mla_http_client_response_t response = mla_http_client_send_request(client, request);
+
+    assert_equal(response.status, MLA_HTTP_CLIENT_RESPONSE_STATUS_OK, "HTTPS request should succeed");
+    assert_equal(response.response.statusCode, mla_http_status_ok, "HTTPS response status code should be 200");
+
+    mla_byte_t buffer[mla_global_config_stream_fast_read_buffer_size] = {0};
+    if (response.response.content.read != nullptr) {
+        mla_size_t readed = response.response.content.read(response.response.content, 0, sizeof(buffer), buffer);
+        assert_true(readed > 0, "Should read bytes from HTTPS response content");
+        mla_string_t content = mla_string(mla_platform_pointer_to_managed_pointer(buffer), sizeof(buffer));
+        assert_true(mla_string_contains(content, mla_string_const("<html")) || mla_string_contains(content, mla_string_const("<!doctype")) || mla_string_contains(content, mla_string_const("<!DOCTYPE")), "Response content should contain HTML");
+    } else {
+        assert_fail("HTTPS response content read function is null");
+    }
+
+    response = mla_http_client_response_invalid();
+#endif
+}
+
+void HttpsClientCustomTlsConfigTest() {
+    mla_http_client_t client = mla_http_client();
+    mla_network_tls_config_t tls_config = mla_network_tls_config_default();
+    mla_network_tls_config_set_verify_peer(tls_config, false);
+    mla_network_tls_config_set_server_name(tls_config, mla_string_const("custom.server.name"));
+    mla_http_client_set_tls_config(client, tls_config);
+
+    mla_network_tls_config_t retrieved = mla_http_client_get_tls_config(client);
+    assert_false(mla_network_tls_config_get_verify_peer(retrieved), "Verify peer should be false");
+    assert_struct_equal(mla_string_t, mla_network_tls_config_get_server_name(retrieved), mla_string_const("custom.server.name"), "Server name should match");
+
+    mla_http_client_set_verify_peer(client, true);
+    retrieved = mla_http_client_get_tls_config(client);
+    assert_true(mla_network_tls_config_get_verify_peer(retrieved), "Verify peer should be true");
+}
+
 void RegisterHttpClientTests(mla_test_executor_t &p_TestExecutor) {
 
     mla_test_t test = mla_test("SimpleGetRequestWithoutDeflate", test_category, SimpleGetRequestWithoutDeflateTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("SimpleGetRequest", test_category, SimpleGetRequestTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("SimpleHttpsGetRequest", test_category, SimpleHttpsGetRequestTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("HttpsClientCustomTlsConfig", test_category, HttpsClientCustomTlsConfigTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("GetRequestWithHeaders", test_category, GetRequestWithHeadersTest);
