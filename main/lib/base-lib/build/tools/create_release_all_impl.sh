@@ -108,6 +108,31 @@ detect_platform() {
     esac
 }
 
+# Determine version if not specified
+VERSION="$specified_version"
+if [ -z "$VERSION" ]; then
+    echo "Fetching existing releases for '$PRODUCT_NAME' from $RELEASES_SERVER_URL/$PRODUCT_NAME/ ..."
+    server_html=$(curl -sL "${RELEASES_SERVER_URL}/${PRODUCT_NAME}/?raw=true" 2>/dev/null || true)
+    
+    # Extract version strings like 0.0.1
+    versions=($(echo "$server_html" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | sort -V | uniq))
+    
+    if [ ${#versions[@]} -gt 0 ]; then
+        latest_version="${versions[-1]}"
+        echo "Latest version found on server: $latest_version"
+        
+        IFS='.' read -r major minor patch <<< "$latest_version"
+        patch=$((patch + 1))
+        VERSION="${major}.${minor}.${patch}"
+        echo "Auto-incremented next version: $VERSION"
+    else
+        VERSION="0.0.1"
+        echo "No existing version found on server. Using initial version: $VERSION"
+    fi
+else
+    echo "Using specified version: $VERSION"
+fi
+
 built_count=0
 failed_configs=()
 skipped_configs=()
@@ -145,7 +170,7 @@ for config in "${BUILD_CONFIGS[@]}"; do
     platform=$(detect_platform "$config_name" "$eval_c_compiler" "$custom_platform")
 
     echo "========================================================================"
-    echo "Building Release Configuration: $config_name"
+    echo "Building Release Configuration: $config_name (v$VERSION)"
     echo "Platform:                      $platform"
     echo "C Compiler:                    $eval_c_compiler"
     echo "C++ Compiler:                  $eval_cxx_compiler"
@@ -160,6 +185,7 @@ for config in "${BUILD_CONFIGS[@]}"; do
           -DCMAKE_C_COMPILER="$eval_c_compiler" \
           -DCMAKE_CXX_COMPILER="$eval_cxx_compiler" \
           -DCMAKE_BUILD_TYPE=Release \
+          -DMLA_APP_VERSION="$VERSION" \
           $extra_flags \
           -S "$WORKSPACE_DIR" \
           -B "$build_dir"
@@ -247,33 +273,8 @@ if [ "$do_publish" = false ]; then
 fi
 
 echo "========================================================================"
-echo "Publishing Release to Miniserve ($RELEASES_SERVER_URL)..."
+echo "Publishing Release v$VERSION to Miniserve ($RELEASES_SERVER_URL)..."
 echo "========================================================================"
-
-# Determine version if not specified
-VERSION="$specified_version"
-if [ -z "$VERSION" ]; then
-    echo "Fetching existing releases for '$PRODUCT_NAME' from $RELEASES_SERVER_URL/$PRODUCT_NAME/ ..."
-    server_html=$(curl -sL "${RELEASES_SERVER_URL}/${PRODUCT_NAME}/?raw=true" 2>/dev/null || true)
-    
-    # Extract version strings like 0.0.1
-    versions=($(echo "$server_html" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | sort -V | uniq))
-    
-    if [ ${#versions[@]} -gt 0 ]; then
-        latest_version="${versions[-1]}"
-        echo "Latest version found on server: $latest_version"
-        
-        IFS='.' read -r major minor patch <<< "$latest_version"
-        patch=$((patch + 1))
-        VERSION="${major}.${minor}.${patch}"
-        echo "Auto-incremented next version: $VERSION"
-    else
-        VERSION="0.0.1"
-        echo "No existing version found on server. Using initial version: $VERSION"
-    fi
-else
-    echo "Using specified version: $VERSION"
-fi
 
 # Function to recursively ensure remote subdirectories exist on Miniserve
 ensure_remote_dir() {

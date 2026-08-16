@@ -120,3 +120,7 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 else()
     message(FATAL_ERROR "Unsupported Compiler. ${CMAKE_CXX_COMPILER_ID} is not supported.")
 endif()
+
+if(MLA_APP_VERSION)
+    add_compile_definitions(MLA_APP_VERSION="${MLA_APP_VERSION}")
+endif()

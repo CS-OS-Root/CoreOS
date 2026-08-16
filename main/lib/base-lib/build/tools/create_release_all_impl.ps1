@@ -62,6 +62,35 @@ function Get-PlatformName {
     return "windows64"
 }
 
+# Determine version
+$targetVersion = $Version
+if (-not $targetVersion) {
+    Write-Host "Fetching existing releases for '$productName' from $releasesServerUrl/$productName/ ..."
+    try {
+        $html = Invoke-RestMethod -Uri "$releasesServerUrl/$productName/?raw=true" -Method Get -ErrorAction SilentlyContinue
+        $matches = [regex]::Matches($html, '(\d+\.\d+\.\d+)')
+        $versions = @($matches | ForEach-Object { $_.Value } | Select-Object -Unique | Sort-Object { [version]$_ })
+        
+        if ($versions.Count -gt 0) {
+            $latest = $versions[-1]
+            $vParts = $latest.Split('.')
+            $major = [int]$vParts[0]
+            $minor = [int]$vParts[1]
+            $patch = [int]$vParts[2] + 1
+            $targetVersion = "$major.$minor.$patch"
+            Write-Host "Auto-incremented next version: $targetVersion (from $latest)" -ForegroundColor Green
+        } else {
+            $targetVersion = "0.0.1"
+            Write-Host "No existing version found on server. Using initial version: $targetVersion" -ForegroundColor Green
+        }
+    } catch {
+        $targetVersion = "0.0.1"
+        Write-Host "Could not query server. Defaulting to initial version: $targetVersion" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "Using specified version: $targetVersion" -ForegroundColor Green
+}
+
 $builtCount = 0
 $failedConfigs = [System.Collections.Generic.List[string]]::new()
 $skippedConfigs = [System.Collections.Generic.List[string]]::new()
@@ -94,7 +123,7 @@ foreach ($config in $global:BUILD_CONFIGS) {
     $platform = Get-PlatformName -ConfigName $configName -CCompiler $cCompiler -CustomPlatform $customPlatform
 
     Write-Host "========================================================================" -ForegroundColor Cyan
-    Write-Host "Building Release Configuration: $configName" -ForegroundColor Cyan
+    Write-Host "Building Release Configuration: $configName (v$targetVersion)" -ForegroundColor Cyan
     Write-Host "Platform:                      $platform"
     Write-Host "C Compiler:                    $cCompiler"
     Write-Host "C++ Compiler:                  $cxxCompiler"
@@ -114,7 +143,8 @@ foreach ($config in $global:BUILD_CONFIGS) {
     $cmakeArgs = @(
         "-DCMAKE_C_COMPILER=$cCompiler",
         "-DCMAKE_CXX_COMPILER=$cxxCompiler",
-        "-DCMAKE_BUILD_TYPE=Release"
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DMLA_APP_VERSION=$targetVersion"
     ) + $generatorFlags
 
     if ($extraFlags) {
@@ -194,37 +224,8 @@ if (-not $Publish) {
 }
 
 Write-Host "========================================================================" -ForegroundColor Cyan
-Write-Host "Publishing Release to Miniserve ($releasesServerUrl)..." -ForegroundColor Cyan
+Write-Host "Publishing Release v$targetVersion to Miniserve ($releasesServerUrl)..." -ForegroundColor Cyan
 Write-Host "========================================================================" -ForegroundColor Cyan
-
-# Determine version
-$targetVersion = $Version
-if (-not $targetVersion) {
-    Write-Host "Fetching existing releases for '$productName' from $releasesServerUrl/$productName/ ..."
-    try {
-        $html = Invoke-RestMethod -Uri "$releasesServerUrl/$productName/?raw=true" -Method Get -ErrorAction SilentlyContinue
-        $matches = [regex]::Matches($html, '(\d+\.\d+\.\d+)')
-        $versions = @($matches | ForEach-Object { $_.Value } | Select-Object -Unique | Sort-Object { [version]$_ })
-        
-        if ($versions.Count -gt 0) {
-            $latest = $versions[-1]
-            $vParts = $latest.Split('.')
-            $major = [int]$vParts[0]
-            $minor = [int]$vParts[1]
-            $patch = [int]$vParts[2] + 1
-            $targetVersion = "$major.$minor.$patch"
-            Write-Host "Auto-incremented next version: $targetVersion (from $latest)" -ForegroundColor Green
-        } else {
-            $targetVersion = "0.0.1"
-            Write-Host "No existing version found on server. Using initial version: $targetVersion" -ForegroundColor Green
-        }
-    } catch {
-        $targetVersion = "0.0.1"
-        Write-Host "Could not query server. Defaulting to initial version: $targetVersion" -ForegroundColor Yellow
-    }
-} else {
-    Write-Host "Using specified version: $targetVersion" -ForegroundColor Green
-}
 
 function Ensure-RemoteDir {
     param (
