@@ -76,6 +76,13 @@ struct mla_cli_app_t {
     mla_array_list_t<mla_init_struct(mla_string_t)> history;
     mla_int32_t  historyIndex;  /**< Current index in command history (-1 indicates live line) */
     mla_string_t savedLiveLine; /**< Temporary copy of live input line saved while browsing history */
+
+    // Interactive command execution state
+    mla_bool_t   is_interactive;          /**< True if interactive prompting is enabled on this CLI app instance */
+    mla_bool_t   in_interactive_mode;     /**< True while waiting for step-by-step parameter inputs */
+    mla_cli_command_t interactive_command; /**< The command whose parameters are being collected */
+    mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> interactive_parameters; /**< Parameters collected so far */
+    mla_size_t   interactive_param_index; /**< Index in interactive_command.parameters currently being prompted */
 };
 
 /**
@@ -89,6 +96,16 @@ mla_cli_app_t mla_cli_app_empty();
 mla_cli_app_t mla_cli_app_init(mla_cli_module_t& rootModule, mla_stream_output_t& outputStream);
 
 /**
+ * @brief Sets whether the CLI application operates in interactive mode.
+ */
+void mla_cli_app_set_interactive(mla_cli_app_t& app, mla_bool_t isInteractive);
+
+/**
+ * @brief Returns true if the CLI application has interactive mode enabled.
+ */
+mla_bool_t mla_cli_app_is_interactive(const mla_cli_app_t& app);
+
+/**
  * @brief Reads available bytes from input stream, updates editor state, handles control keys, and repaints line.
  * @return True if input processing succeeded, false if command execution failed.
  */
@@ -98,7 +115,5 @@ mla_bool_t mla_cli_app_update_and_process_input(mla_cli_app_t& app, mla_stream_i
  * @brief Computes the longest common prefix among a list of completion candidates.
  */
 mla_string_t mla_private_cli_longest_common_prefix(const mla_array_list_t<mla_init_struct(mla_string_t)> &candidates);
-
-
 
 #endif

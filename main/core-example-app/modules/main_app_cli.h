@@ -40,11 +40,13 @@ inline mla_cli_module_t mla_private_cli_build_root_module() {
     return rootModule;
 }
 
-inline void main_app_cli_init() {
+inline void main_app_cli_init(int argc = 0, char** argv = nullptr) {
 
     // Initialize CLI related components here
     mla_info("Welcome to the CommandLine Interface (CLI)");
     mla_info("Please enter a command:");
+
+    (void)argv;
 
     mla_cli_history_load_from_file(g_main_app_cli_history, mla_string_const("/.cli_history.json"), 10);
 
@@ -52,6 +54,10 @@ inline void main_app_cli_init() {
 
     mla_stream_output_t output = mla_stream_output_stdout();
     g_main_app_cli = mla_cli_app_init(root, output);
+
+    if (argc > 1) {
+        mla_cli_app_set_interactive(g_main_app_cli, false);
+    }
 
     mla_user_data_t app_user_data = mla_user_data_empty();
     mla_task_t task = mla_task_repeating(mla_string("cli"), mla_private_cli_task, app_user_data);

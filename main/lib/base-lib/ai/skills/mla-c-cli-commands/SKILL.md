@@ -213,6 +213,26 @@ On successful command execution, record used parameter values so they are sugges
 mla_cli_history_record_value(app_history_store, mla_string_const("module:cmd:param"), param_value);
 ```
 
+## Interactive Parameter Prompting
+
+When the user enters a command in an interactive terminal shell without providing all mandatory parameters, the CLI application automatically enters **interactive parameter mode** and prompts step-by-step for the required and optional arguments:
+
+1. **Mandatory Parameters**: The CLI prompts for each missing mandatory parameter. If the user presses Enter with an empty value, the CLI re-prompts until a valid value is provided.
+2. **Optional Parameters**: The CLI then prompts for unsupplied optional parameters. Pressing Enter on an empty line skips the optional parameter.
+3. **Flag Parameters**: The CLI prompts for unsupplied flag parameters. Answering `y`, `yes`, `true`, or `1` enables the flag; pressing Enter or answering `n`, `no`, `false`, or `0` leaves the flag disabled.
+4. **Already-Supplied Parameters**: Any parameters already supplied on the command line (e.g. `deploy --app myapp`) are preserved and skipped during interactive prompting.
+5. **Autocompletion & Control**: `Tab` completion operates on the active parameter prompt using any registered `value_autocomplete_fn`. Pressing `Ctrl-C` cancels the interactive prompt sequence and returns to the module prompt.
+
+### Non-Interactive Mode Configuration
+
+When running commands non-interactively (e.g. when the application is launched with command-line arguments `argc > 1`), interactive mode can be disabled using:
+
+```cpp
+mla_cli_app_set_interactive(app, false);
+```
+
+When interactive mode is disabled, commands with missing mandatory parameters output an error message immediately without prompting.
+
 ## Output Helpers
 
 The `mla_cli_command_execute_outstream_t` struct provides two write functions:
