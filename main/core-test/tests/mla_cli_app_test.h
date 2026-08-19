@@ -727,6 +727,102 @@ inline void BackspacePostAutocompleteTest() {
     assert_struct_equal(mla_string_t, app.currentLine, mla_string("create --sour"), "Backspace should delete 'c' cleanly");
 }
 
+static mla_array_list_t<mla_init_struct(mla_string_t)> test_name_autocomplete(
+    const mla_cli_command_t &command,
+    const mla_string_t &parameterName,
+    const mla_string_t &currentValuePrefix,
+    const mla_user_data_t &userData) {
+    (void)command; (void)parameterName; (void)userData;
+    mla_array_list_t<mla_init_struct(mla_string_t)> list = mla_array_list_empty<mla_init_struct(mla_string_t)>();
+    mla_array_list_add(list, mla_string_const("add-auto-update"));
+    mla_array_list_add(list, mla_string_const("fix-cli"));
+    return mla_cli_parameter_value_autocomplete_filter_candidates(list, currentValuePrefix);
+}
+
+static mla_array_list_t<mla_init_struct(mla_string_t)> test_msg_autocomplete(
+    const mla_cli_command_t &command,
+    const mla_string_t &parameterName,
+    const mla_string_t &currentValuePrefix,
+    const mla_user_data_t &userData) {
+    (void)command; (void)parameterName; (void)userData;
+    mla_array_list_t<mla_init_struct(mla_string_t)> list = mla_array_list_empty<mla_init_struct(mla_string_t)>();
+    mla_array_list_add(list, mla_string_const("add http update"));
+    mla_array_list_add(list, mla_string_const("fix bugs"));
+    return mla_cli_parameter_value_autocomplete_filter_candidates(list, currentValuePrefix);
+}
+
+inline void LineEditingDirectEchoTest() {
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_memory_stream_t memStream = mla_memory_stream_empty();
+    mla_cli_app_t app = mla_cli_app_init(root, memStream.output);
+
+    // Reset memory stream to ignore the initial prompt
+    mla_memory_stream_reset(memStream);
+
+    // Typing single character at end of line should directly echo the character without redraw ANSI escapes
+    FeedCliInput(app, memStream.output, mla_string("a"));
+    mla_size_t size = mla_memory_stream_get_size(memStream);
+    assert_equal(size, (mla_size_t)1, "Direct typing at end of line should output exactly 1 byte");
+
+    mla_memory_stream_set_position(memStream, 0);
+    mla_byte_t buf[16] = {0};
+    memStream.input.read(memStream.input, 0, size, buf);
+    assert_equal((mla_char_t)buf[0], 'a', "Output byte should be 'a'");
+}
+
+inline void LineEditingBackspaceEchoTest() {
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_memory_stream_t memStream = mla_memory_stream_empty();
+    mla_cli_app_t app = mla_cli_app_init(root, memStream.output);
+
+    // Type two characters
+    FeedCliInput(app, memStream.output, mla_string("ab"));
+    mla_memory_stream_reset(memStream);
+
+    // Backspace at end of line should emit '\b \b' (3 bytes)
+    FeedCliInput(app, memStream.output, mla_string("\x7f"));
+    mla_size_t size = mla_memory_stream_get_size(memStream);
+    assert_equal(size, (mla_size_t)3, "Backspace at end of line should emit 3 bytes (\\b \\b)");
+
+    mla_memory_stream_set_position(memStream, 0);
+    mla_byte_t buf[16] = {0};
+    memStream.input.read(memStream.input, 0, size, buf);
+    assert_equal((mla_char_t)buf[0], '\b', "First byte should be backspace");
+    assert_equal((mla_char_t)buf[1], ' ', "Second byte should be space");
+    assert_equal((mla_char_t)buf[2], '\b', "Third byte should be backspace");
+}
+
+inline void MultiParameterInteractiveTypingTest() {
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_cli_command_t commitCmd = mla_cli_command(mla_string_const("commit"), nullptr);
+    mla_cli_command_parameter_t nameParam = mla_cli_command_parameter(
+        mla_string_const("name"), mla_string_const("Commit name"), true, false, test_name_autocomplete);
+    mla_cli_command_parameter_t msgParam = mla_cli_command_parameter(
+        mla_string_const("message"), mla_string_const("Commit message"), false, false, test_msg_autocomplete);
+    mla_cli_command_add_parameter(commitCmd, nameParam);
+    mla_cli_command_add_parameter(commitCmd, msgParam);
+    mla_cli_module_add_command(root, commitCmd);
+
+    mla_stream_output_t output = mla_stream_noop_output();
+    mla_cli_app_t app = mla_cli_app_init(root, output);
+
+    // Type command and first parameter prefix, then tab complete
+    FeedCliInput(app, output, mla_string("commit --name add-"));
+    FeedCliInput(app, output, mla_string("\t"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("commit --name add-auto-update"),
+                        "First parameter should autocomplete");
+
+    // Continue typing second parameter with quotes
+    FeedCliInput(app, output, mla_string(" --message \"add http "));
+    FeedCliInput(app, output, mla_string("\t"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("commit --name add-auto-update --message \"add http update"),
+                        "Second parameter should autocomplete");
+
+    FeedCliInput(app, output, mla_string("\""));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("commit --name add-auto-update --message \"add http update\""),
+                        "Closing quote should be appended cleanly");
+}
+
 inline void CliHistoryPersistenceTest() {
     mla_cli_history_store_t store = mla_cli_history_store_init(10);
     mla_string_t key = mla_string_const("sandbox:create:source");
@@ -769,6 +865,300 @@ inline void CliHistoryMaxPerKeyPruningTest() {
     assert_equal(mla_array_list_size(candidates), (mla_size_t)2, "Should only have 2 candidate entries remaining");
     assert_struct_equal(mla_string_t, mla_array_list_get_unsafe(candidates, 0), mla_string("v4"), "Oldest entries should be dropped");
     assert_struct_equal(mla_string_t, mla_array_list_get_unsafe(candidates, 1), mla_string("v5"), "Most recent entries should be kept");
+}
+
+static mla_bool_t test_interactive_executed = false;
+static mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> test_interactive_saved_params =
+    mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+
+inline mla_bool_t test_interactive_cmd_execute(
+    const mla_cli_command_t& command,
+    const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>& parameters,
+    const mla_cli_command_execute_outstream_t& out) {
+    (void)command;
+    test_interactive_executed = true;
+    test_interactive_saved_params = parameters;
+    out.writeCString(out.userdata, "Interactive command executed\n");
+    return true;
+}
+
+inline void InteractivePromptMandatoryAndOptionalParametersTest() {
+    test_interactive_executed = false;
+    test_interactive_saved_params = mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_cli_command_t deployCmd = mla_cli_command(mla_string_const("deploy"), mla_string_const("Deploy application"), test_interactive_cmd_execute);
+    mla_cli_command_add_parameter(deployCmd, mla_string_const("app"), mla_string_const("Application name"), true);
+    mla_cli_command_add_parameter(deployCmd, mla_string_const("env"), mla_string_const("Target environment"), true);
+    mla_cli_command_add_parameter(deployCmd, mla_string_const("port"), mla_string_const("Port number"), false);
+    mla_cli_module_add_command(root, deployCmd);
+
+    mla_stream_output_t output = mla_stream_noop_output();
+    mla_cli_app_t app = mla_cli_app_init(root, output);
+
+    assert_true(mla_cli_app_is_interactive(app), "App should start in interactive mode by default");
+
+    // Enter command without mandatory parameters -> triggers interactive prompting
+    FeedCliInput(app, output, mla_string("deploy\n"));
+    assert_true(app.in_interactive_mode, "App should enter interactive mode for missing mandatory params");
+    assert_equal(app.interactive_param_index, (mla_size_t)0, "First prompt should be for index 0 (app)");
+
+    // Supply 'app'
+    FeedCliInput(app, output, mla_string("myapp\n"));
+    assert_true(app.in_interactive_mode, "App should still be in interactive mode for second param");
+    assert_equal(app.interactive_param_index, (mla_size_t)1, "Second prompt should be for index 1 (env)");
+
+    // Supply 'env'
+    FeedCliInput(app, output, mla_string("production\n"));
+    assert_true(app.in_interactive_mode, "App should still be in interactive mode for optional param");
+    assert_equal(app.interactive_param_index, (mla_size_t)2, "Third prompt should be for index 2 (port)");
+
+    // Supply optional 'port'
+    FeedCliInput(app, output, mla_string("8080\n"));
+    assert_false(app.in_interactive_mode, "App should exit interactive mode after last param");
+    assert_true(test_interactive_executed, "Command should have executed");
+    assert_equal(mla_hash_map_size(test_interactive_saved_params), (mla_size_t)3, "Three parameters should have been gathered");
+
+    mla_string_t valApp = mla_string_empty();
+    mla_string_t valEnv = mla_string_empty();
+    mla_string_t valPort = mla_string_empty();
+    assert_true(mla_hash_map_get(test_interactive_saved_params, mla_string_const("app"), valApp), "app param should exist");
+    assert_struct_equal(mla_string_t, valApp, mla_string("myapp"), "app param value should match");
+    assert_true(mla_hash_map_get(test_interactive_saved_params, mla_string_const("env"), valEnv), "env param should exist");
+    assert_struct_equal(mla_string_t, valEnv, mla_string("production"), "env param value should match");
+    assert_true(mla_hash_map_get(test_interactive_saved_params, mla_string_const("port"), valPort), "port param should exist");
+    assert_struct_equal(mla_string_t, valPort, mla_string("8080"), "port param value should match");
+}
+
+inline void InteractivePromptFlagParameterTest() {
+    // Sub-test 1: Flag set to true ('y')
+    {
+        test_interactive_executed = false;
+        test_interactive_saved_params = mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+
+        mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+        mla_cli_command_t svcCmd = mla_cli_command(mla_string_const("service"), test_interactive_cmd_execute);
+        mla_cli_command_add_parameter(svcCmd, mla_string_const("name"), true);
+        mla_cli_command_add_parameter(svcCmd, mla_string_const("force"), false, true); // flag
+        mla_cli_module_add_command(root, svcCmd);
+
+        mla_stream_output_t output = mla_stream_noop_output();
+        mla_cli_app_t app = mla_cli_app_init(root, output);
+
+        FeedCliInput(app, output, mla_string("service\n"));
+        FeedCliInput(app, output, mla_string("nginx\n"));
+        FeedCliInput(app, output, mla_string("y\n"));
+
+        assert_false(app.in_interactive_mode, "Interactive mode should complete");
+        assert_true(test_interactive_executed, "Service command should execute");
+        assert_true(mla_hash_map_contains(test_interactive_saved_params, mla_string_const("force")), "Flag force should be present");
+    }
+
+    // Sub-test 2: Flag omitted ('n')
+    {
+        test_interactive_executed = false;
+        test_interactive_saved_params = mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+
+        mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+        mla_cli_command_t svcCmd = mla_cli_command(mla_string_const("service"), test_interactive_cmd_execute);
+        mla_cli_command_add_parameter(svcCmd, mla_string_const("name"), true);
+        mla_cli_command_add_parameter(svcCmd, mla_string_const("force"), false, true); // flag
+        mla_cli_module_add_command(root, svcCmd);
+
+        mla_stream_output_t output = mla_stream_noop_output();
+        mla_cli_app_t app = mla_cli_app_init(root, output);
+
+        FeedCliInput(app, output, mla_string("service\n"));
+        FeedCliInput(app, output, mla_string("nginx\n"));
+        FeedCliInput(app, output, mla_string("n\n"));
+
+        assert_false(app.in_interactive_mode, "Interactive mode should complete");
+        assert_true(test_interactive_executed, "Service command should execute");
+        assert_false(mla_hash_map_contains(test_interactive_saved_params, mla_string_const("force")), "Flag force should NOT be present");
+    }
+}
+
+inline void InteractivePromptEmptyMandatoryRePromptTest() {
+    test_interactive_executed = false;
+    test_interactive_saved_params = mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_cli_command_t killCmd = mla_cli_command(mla_string_const("kill"), test_interactive_cmd_execute);
+    mla_cli_command_add_parameter(killCmd, mla_string_const("name"), true);
+    mla_cli_module_add_command(root, killCmd);
+
+    mla_stream_output_t output = mla_stream_noop_output();
+    mla_cli_app_t app = mla_cli_app_init(root, output);
+
+    FeedCliInput(app, output, mla_string("kill\n"));
+    assert_true(app.in_interactive_mode, "Should enter interactive mode");
+
+    // Empty input for mandatory parameter
+    FeedCliInput(app, output, mla_string("\n"));
+    assert_true(app.in_interactive_mode, "Should stay in interactive mode after empty mandatory input");
+    assert_false(test_interactive_executed, "Command should not have executed yet");
+
+    // Now supply valid value
+    FeedCliInput(app, output, mla_string("worker_task\n"));
+    assert_false(app.in_interactive_mode, "Should exit interactive mode");
+    assert_true(test_interactive_executed, "Command should execute after providing valid value");
+
+    mla_string_t valName = mla_string_empty();
+    assert_true(mla_hash_map_get(test_interactive_saved_params, mla_string_const("name"), valName), "name param should exist");
+    assert_struct_equal(mla_string_t, valName, mla_string("worker_task"), "name param value should match");
+}
+
+inline void InteractivePromptOptionalSkipTest() {
+    test_interactive_executed = false;
+    test_interactive_saved_params = mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_cli_command_t jobCmd = mla_cli_command(mla_string_const("job"), test_interactive_cmd_execute);
+    mla_cli_command_add_parameter(jobCmd, mla_string_const("id"), true);
+    mla_cli_command_add_parameter(jobCmd, mla_string_const("timeout"), false); // optional
+    mla_cli_module_add_command(root, jobCmd);
+
+    mla_stream_output_t output = mla_stream_noop_output();
+    mla_cli_app_t app = mla_cli_app_init(root, output);
+
+    FeedCliInput(app, output, mla_string("job\n"));
+    FeedCliInput(app, output, mla_string("job_42\n"));
+
+    // Press Enter to skip optional timeout
+    FeedCliInput(app, output, mla_string("\n"));
+
+    assert_false(app.in_interactive_mode, "Should complete interactive mode");
+    assert_true(test_interactive_executed, "Job command should execute");
+    assert_equal(mla_hash_map_size(test_interactive_saved_params), (mla_size_t)1, "Only id should be in parameters");
+    assert_false(mla_hash_map_contains(test_interactive_saved_params, mla_string_const("timeout")), "timeout should be skipped");
+}
+
+inline void InteractivePromptPartialCommandLineArgsTest() {
+    test_interactive_executed = false;
+    test_interactive_saved_params = mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_cli_command_t copyCmd = mla_cli_command(mla_string_const("copy"), test_interactive_cmd_execute);
+    mla_cli_command_add_parameter(copyCmd, mla_string_const("src"), true);
+    mla_cli_command_add_parameter(copyCmd, mla_string_const("dst"), true);
+    mla_cli_command_add_parameter(copyCmd, mla_string_const("verbose"), false, true); // flag
+    mla_cli_module_add_command(root, copyCmd);
+
+    mla_stream_output_t output = mla_stream_noop_output();
+    mla_cli_app_t app = mla_cli_app_init(root, output);
+
+    // Initial command provided 'src', but omitted mandatory 'dst'
+    FeedCliInput(app, output, mla_string("copy --src /home/data\n"));
+    assert_true(app.in_interactive_mode, "Should enter interactive mode for missing dst");
+    assert_equal(app.interactive_param_index, (mla_size_t)1, "Should skip index 0 (src) and prompt for index 1 (dst)");
+
+    // Supply dst
+    FeedCliInput(app, output, mla_string("/var/backup\n"));
+    assert_equal(app.interactive_param_index, (mla_size_t)2, "Next prompt should be for verbose flag");
+
+    // Supply verbose flag
+    FeedCliInput(app, output, mla_string("1\n"));
+
+    assert_false(app.in_interactive_mode, "Should complete");
+    assert_true(test_interactive_executed, "Copy command should execute");
+
+    mla_string_t valSrc = mla_string_empty();
+    mla_string_t valDst = mla_string_empty();
+    assert_true(mla_hash_map_get(test_interactive_saved_params, mla_string_const("src"), valSrc), "src should be preserved");
+    assert_struct_equal(mla_string_t, valSrc, mla_string("/home/data"), "src value should match initial command");
+    assert_true(mla_hash_map_get(test_interactive_saved_params, mla_string_const("dst"), valDst), "dst should be set");
+    assert_struct_equal(mla_string_t, valDst, mla_string("/var/backup"), "dst value should match");
+    assert_true(mla_hash_map_contains(test_interactive_saved_params, mla_string_const("verbose")), "verbose flag should be set");
+}
+
+inline void InteractivePromptCtrlCCancelTest() {
+    test_interactive_executed = false;
+    test_interactive_saved_params = mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_cli_command_t delCmd = mla_cli_command(mla_string_const("delete"), test_interactive_cmd_execute);
+    mla_cli_command_add_parameter(delCmd, mla_string_const("target"), true);
+    mla_cli_module_add_command(root, delCmd);
+
+    mla_stream_output_t output = mla_stream_noop_output();
+    mla_cli_app_t app = mla_cli_app_init(root, output);
+
+    FeedCliInput(app, output, mla_string("delete\n"));
+    assert_true(app.in_interactive_mode, "Should enter interactive mode");
+
+    // Cancel with Ctrl-C (0x03)
+    FeedCliInput(app, output, mla_string("\x03"));
+    assert_false(app.in_interactive_mode, "Ctrl-C should cancel interactive mode");
+    assert_false(test_interactive_executed, "Command should NOT execute after cancel");
+    assert_equal(mla_string_length(app.currentLine), (mla_size_t)0, "Line should be empty");
+}
+
+static mla_array_list_t<mla_init_struct(mla_string_t)> test_interactive_proto_autocomplete(
+    const mla_cli_command_t &command,
+    const mla_string_t &parameterName,
+    const mla_string_t &currentValuePrefix,
+    const mla_user_data_t &userData) {
+    (void)command; (void)parameterName; (void)userData;
+    mla_array_list_t<mla_init_struct(mla_string_t)> list = mla_array_list_empty<mla_init_struct(mla_string_t)>();
+    mla_array_list_add(list, mla_string_const("tcp"));
+    mla_array_list_add(list, mla_string_const("udp"));
+    mla_array_list_add(list, mla_string_const("tls"));
+    return mla_cli_parameter_value_autocomplete_filter_candidates(list, currentValuePrefix);
+}
+
+inline void InteractivePromptTabAutocompleteTest() {
+    test_interactive_executed = false;
+    test_interactive_saved_params = mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_cli_command_t netCmd = mla_cli_command(mla_string_const("net"), test_interactive_cmd_execute);
+    mla_cli_command_parameter_t protoParam = mla_cli_command_parameter(
+        mla_string_const("proto"), mla_string_const("Protocol"), true, false, test_interactive_proto_autocomplete);
+    mla_cli_command_add_parameter(netCmd, protoParam);
+    mla_cli_module_add_command(root, netCmd);
+
+    mla_stream_output_t output = mla_stream_noop_output();
+    mla_cli_app_t app = mla_cli_app_init(root, output);
+
+    FeedCliInput(app, output, mla_string("net\n"));
+    assert_true(app.in_interactive_mode, "Should be in interactive mode");
+
+    // Type 'ud' and press Tab
+    FeedCliInput(app, output, mla_string("ud"));
+    FeedCliInput(app, output, mla_string("\t"));
+
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("udp"), "Tab should complete 'ud' to 'udp' in interactive prompt");
+
+    FeedCliInput(app, output, mla_string("\n"));
+    assert_false(app.in_interactive_mode, "Should exit interactive mode");
+    assert_true(test_interactive_executed, "Net command should execute");
+
+    mla_string_t valProto = mla_string_empty();
+    assert_true(mla_hash_map_get(test_interactive_saved_params, mla_string_const("proto"), valProto), "proto param should exist");
+    assert_struct_equal(mla_string_t, valProto, mla_string("udp"), "proto value should be 'udp'");
+}
+
+inline void NonInteractiveModeNoPromptTest() {
+    test_interactive_executed = false;
+    test_interactive_saved_params = mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_cli_command_t testCmd = mla_cli_command(mla_string_const("testcmd"), test_interactive_cmd_execute);
+    mla_cli_command_add_parameter(testCmd, mla_string_const("req"), true);
+    mla_cli_module_add_command(root, testCmd);
+
+    mla_stream_output_t output = mla_stream_noop_output();
+    mla_cli_app_t app = mla_cli_app_init(root, output);
+
+    // Explicitly disable interactive mode
+    mla_cli_app_set_interactive(app, false);
+    assert_false(mla_cli_app_is_interactive(app), "Interactive mode should be false");
+
+    // Feed command missing mandatory param
+    FeedCliInput(app, output, mla_string("testcmd\n"));
+
+    assert_false(app.in_interactive_mode, "App should NOT enter interactive mode when is_interactive is false");
+    assert_false(test_interactive_executed, "Command should NOT execute");
 }
 
 inline void RegisterCliAppTests(mla_test_executor_t &p_TestExecutor) {
@@ -822,6 +1212,39 @@ inline void RegisterCliAppTests(mla_test_executor_t &p_TestExecutor) {
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("BackspacePostAutocomplete", test_category, BackspacePostAutocompleteTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("LineEditingDirectEcho", test_category, LineEditingDirectEchoTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("LineEditingBackspaceEcho", test_category, LineEditingBackspaceEchoTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("MultiParameterInteractiveTyping", test_category, MultiParameterInteractiveTypingTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("InteractivePromptMandatoryAndOptionalParameters", test_category, InteractivePromptMandatoryAndOptionalParametersTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("InteractivePromptFlagParameter", test_category, InteractivePromptFlagParameterTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("InteractivePromptEmptyMandatoryRePrompt", test_category, InteractivePromptEmptyMandatoryRePromptTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("InteractivePromptOptionalSkip", test_category, InteractivePromptOptionalSkipTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("InteractivePromptPartialCommandLineArgs", test_category, InteractivePromptPartialCommandLineArgsTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("InteractivePromptCtrlCCancel", test_category, InteractivePromptCtrlCCancelTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("InteractivePromptTabAutocomplete", test_category, InteractivePromptTabAutocompleteTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("NonInteractiveModeNoPrompt", test_category, NonInteractiveModeNoPromptTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
 #if !defined mla_test_disable_file_system || mla_test_disable_file_system != 1

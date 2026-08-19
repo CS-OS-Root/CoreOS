@@ -112,8 +112,40 @@ mla_string_t mla_private_cli_build_module_prompt(mla_cli_app_t &app) {
     return mla_string_concat(result, ">");
 }
 
+mla_string_t mla_private_cli_build_parameter_prompt(const mla_cli_command_parameter_t &param) {
+    mla_string_t result = mla_string_concat("Parameter '", param.parameterName, "'");
+
+    if (mla_string_length(param.description) > 0) {
+        result = mla_string_concat(result, " (", param.description, ")");
+    }
+
+    if (param.mandatory && !param.is_flag) {
+        result = mla_string_concat(result, " [required]: ");
+    } else if (param.is_flag) {
+        result = mla_string_concat(result, " [y/N]: ");
+    } else {
+        result = mla_string_concat(result, " [optional]: ");
+    }
+
+    return result;
+}
+
+mla_string_t mla_private_cli_build_prompt(mla_cli_app_t &app) {
+    if (app.in_interactive_mode && app.interactive_param_index < mla_array_list_size(app.interactive_command.parameters)) {
+        const mla_cli_command_parameter_t *param = mla_array_list_get_ref(app.interactive_command.parameters, app.interactive_param_index);
+        if (param != nullptr) {
+            return mla_private_cli_build_parameter_prompt(*param);
+        }
+    }
+    return mla_private_cli_build_module_prompt(app);
+}
+
 void mla_private_cli_write_module_prompt(mla_cli_app_t &app, mla_stream_output_t &outputStream) {
     mla_private_cli_write_string(outputStream, mla_private_cli_build_module_prompt(app));
+}
+
+void mla_private_cli_write_prompt(mla_cli_app_t &app, mla_stream_output_t &outputStream) {
+    mla_private_cli_write_string(outputStream, mla_private_cli_build_prompt(app));
 }
 
 void mla_private_cli_activate_module(mla_cli_app_t &app, mla_cli_module_t &module) {
@@ -316,7 +348,130 @@ mla_cli_parser_t mla_private_cli_setup_parser(mla_cli_app_t &app) {
     return parser;
 }
 
-mla_bool_t mla_private_cli_process_parser_result(const mla_string_t& inputCommand, const mla_cli_parser_result &parser_result, mla_stream_output_t &outputStream) {
+mla_bool_t mla_private_cli_execute_command(const mla_cli_command_t &cmd,
+                                            const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> &params,
+                                            mla_stream_output_t &outputStream) {
+    if (cmd.execute != nullptr) {
+        mla_user_data_t user_data = mla_user_data_empty();
+        mla_pointer_t outputStream_ptr = mla_platform_pointer_to_managed_pointer(&outputStream);
+        mla_user_data_set_pointer(user_data, mla_stream_output_user_data_name, outputStream_ptr);
+
+        mla_cli_command_execute_outstream_t stringOutstream = {
+            user_data,
+            mla_private_cli_command_execute_outstream_to_stream_bridge,
+            mla_private_cli_command_execute_outstream_buffer_to_stream_bridge,
+            mla_private_cli_command_execute_outstream_c_string_to_stream_bridge,
+
+            mla_private_cli_command_execute_outstream_verbose_to_stream_disabled,
+            mla_private_cli_command_execute_outstream_verbose_buffer_to_stream_disabled,
+            mla_private_cli_command_execute_outstream_verbose_c_string_to_stream_disabled
+        };
+
+        if (mla_cli_command_parameter_verbose_output_active(cmd, params)) {
+            stringOutstream.writeVerbose = mla_private_cli_command_execute_outstream_verbose_to_stream_bridge;
+            stringOutstream.writeVerboseBuffer = mla_private_cli_command_execute_outstream_verbose_buffer_to_stream_bridge;
+            stringOutstream.writeVerboseCString = mla_private_cli_command_execute_outstream_verbose_c_string_to_stream_bridge;
+        }
+
+        return cmd.execute(cmd, params, stringOutstream);
+    } else {
+        mla_error(mla_string_concat(mla_string("Command '"), cmd.name, mla_string("' has no execute function")));
+        return false;
+    }
+}
+
+void mla_private_cli_start_interactive_prompt(mla_cli_app_t &app, const mla_cli_command_t &command,
+                                              const mla_hash_map_t<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)> &initialParams,
+                                              mla_stream_output_t &outputStream) {
+    app.in_interactive_mode = true;
+    app.interactive_command = command;
+    app.interactive_parameters = initialParams;
+    app.interactive_param_index = 0;
+
+    // Find the first parameter not yet provided
+    mla_size_t paramCount = mla_array_list_size(app.interactive_command.parameters);
+    while (app.interactive_param_index < paramCount) {
+        const mla_cli_command_parameter_t *param = mla_array_list_get_ref(app.interactive_command.parameters, app.interactive_param_index);
+        if (param != nullptr && !mla_hash_map_contains(app.interactive_parameters, param->parameterName)) {
+            break;
+        }
+        app.interactive_param_index++;
+    }
+
+    if (app.interactive_param_index < paramCount) {
+        mla_private_cli_write_prompt(app, outputStream);
+    } else {
+        // All parameters already provided
+        app.in_interactive_mode = false;
+        mla_private_cli_execute_command(app.interactive_command, app.interactive_parameters, outputStream);
+        mla_private_cli_write_module_prompt(app, outputStream);
+    }
+}
+
+mla_bool_t mla_private_cli_process_interactive_input(mla_cli_app_t &app, const mla_string_t &inputVal, mla_stream_output_t &outputStream) {
+    mla_size_t paramCount = mla_array_list_size(app.interactive_command.parameters);
+    if (app.interactive_param_index >= paramCount) {
+        app.in_interactive_mode = false;
+        mla_private_cli_write_module_prompt(app, outputStream);
+        return true;
+    }
+
+    const mla_cli_command_parameter_t *param = mla_array_list_get_ref(app.interactive_command.parameters, app.interactive_param_index);
+    if (param == nullptr) {
+        app.in_interactive_mode = false;
+        mla_private_cli_write_module_prompt(app, outputStream);
+        return false;
+    }
+
+    mla_string_t trimmed = mla_string_trim(inputVal);
+
+    if (param->is_flag) {
+        if (mla_string_equals_ignore_case(trimmed, mla_string_const("y")) ||
+            mla_string_equals_ignore_case(trimmed, mla_string_const("yes")) ||
+            mla_string_equals_ignore_case(trimmed, mla_string_const("true")) ||
+            mla_string_equals(trimmed, mla_string_const("1"))) {
+            mla_hash_map_push(app.interactive_parameters, param->parameterName, mla_string_empty());
+        }
+        // Advance to next parameter
+        app.interactive_param_index++;
+    } else if (param->mandatory) {
+        if (mla_string_is_empty(trimmed)) {
+            mla_private_cli_write_string(outputStream, mla_string_concat("Value is required for parameter '", param->parameterName, "'\n"));
+            mla_private_cli_write_prompt(app, outputStream);
+            return true;
+        } else {
+            mla_hash_map_push(app.interactive_parameters, param->parameterName, trimmed);
+            app.interactive_param_index++;
+        }
+    } else {
+        // Optional parameter
+        if (!mla_string_is_empty(trimmed)) {
+            mla_hash_map_push(app.interactive_parameters, param->parameterName, trimmed);
+        }
+        app.interactive_param_index++;
+    }
+
+    // Find next parameter not yet provided
+    while (app.interactive_param_index < paramCount) {
+        const mla_cli_command_parameter_t *nextParam = mla_array_list_get_ref(app.interactive_command.parameters, app.interactive_param_index);
+        if (nextParam != nullptr && !mla_hash_map_contains(app.interactive_parameters, nextParam->parameterName)) {
+            break;
+        }
+        app.interactive_param_index++;
+    }
+
+    if (app.interactive_param_index >= paramCount) {
+        app.in_interactive_mode = false;
+        mla_bool_t execSuccess = mla_private_cli_execute_command(app.interactive_command, app.interactive_parameters, outputStream);
+        mla_private_cli_write_module_prompt(app, outputStream);
+        return execSuccess;
+    }
+
+    mla_private_cli_write_prompt(app, outputStream);
+    return true;
+}
+
+mla_bool_t mla_private_cli_process_parser_result(mla_cli_app_t &app, const mla_string_t& inputCommand, const mla_cli_parser_result &parser_result, mla_stream_output_t &outputStream) {
 
     if (parser_result.isValid && mla_string_length(parser_result.matchingCommand.name) != 0) {
         // Validate mandatory parameters
@@ -326,50 +481,30 @@ mla_bool_t mla_private_cli_process_parser_result(const mla_string_t& inputComman
             mla_cli_command_parameter_t *param = mla_array_list_get_ref(parser_result.matchingCommand.parameters, i);
 
             if (param->mandatory && !mla_hash_map_contains(parser_result.matchingParameters, param->parameterName)) {
-                mla_private_cli_write_string(outputStream,
-                                       mla_string_concat(mla_string("Parameter '"), param->parameterName,
-                                                         mla_string("' is mandatory but not provided\n")));
                 missingMandatoryParameter = true;
+                break;
             }
         }
 
         if (missingMandatoryParameter) {
-            // not all mandatory parameters are provided
-            return false;
+            if (app.is_interactive) {
+                mla_private_cli_start_interactive_prompt(app, parser_result.matchingCommand, parser_result.matchingParameters, outputStream);
+                return true;
+            } else {
+                for (mla_size_t i = 0; i < mla_array_list_size(parser_result.matchingCommand.parameters); ++i) {
+                    mla_cli_command_parameter_t *param = mla_array_list_get_ref(parser_result.matchingCommand.parameters, i);
+                    if (param->mandatory && !mla_hash_map_contains(parser_result.matchingParameters, param->parameterName)) {
+                        mla_private_cli_write_string(outputStream,
+                                               mla_string_concat(mla_string("Parameter '"), param->parameterName,
+                                                                 mla_string("' is mandatory but not provided\n")));
+                    }
+                }
+                return false;
+            }
         }
 
         // Execute the command
-        if (parser_result.matchingCommand.execute != nullptr) {
-
-            mla_user_data_t user_data = mla_user_data_empty();
-            mla_pointer_t outputStream_ptr = mla_platform_pointer_to_managed_pointer(&outputStream);
-            mla_user_data_set_pointer(user_data, mla_stream_output_user_data_name, outputStream_ptr);
-
-            mla_cli_command_execute_outstream_t stringOutstream = {
-                user_data,
-                mla_private_cli_command_execute_outstream_to_stream_bridge,
-                mla_private_cli_command_execute_outstream_buffer_to_stream_bridge,
-                mla_private_cli_command_execute_outstream_c_string_to_stream_bridge,
-
-                mla_private_cli_command_execute_outstream_verbose_to_stream_disabled,
-                mla_private_cli_command_execute_outstream_verbose_buffer_to_stream_disabled,
-                mla_private_cli_command_execute_outstream_verbose_c_string_to_stream_disabled
-            };
-
-            if (mla_cli_command_parameter_verbose_output_active(parser_result.matchingCommand, parser_result.matchingParameters)) {
-                stringOutstream.writeVerbose = mla_private_cli_command_execute_outstream_verbose_to_stream_bridge;
-                stringOutstream.writeVerboseBuffer = mla_private_cli_command_execute_outstream_verbose_buffer_to_stream_bridge;
-                stringOutstream.writeVerboseCString = mla_private_cli_command_execute_outstream_verbose_c_string_to_stream_bridge;
-            }
-
-            return parser_result.matchingCommand.execute(parser_result.matchingCommand, parser_result.matchingParameters,
-                                                  stringOutstream);
-        } else {
-            mla_error(
-                mla_string_concat(mla_string("Command '"), parser_result.matchingCommand.name, mla_string(
-                    "' has no execute function")));
-            return false;
-        }
+        return mla_private_cli_execute_command(parser_result.matchingCommand, parser_result.matchingParameters, outputStream);
 
     } else {
         mla_private_cli_write_string(outputStream, mla_string("Unknown Command :\n"));
@@ -389,10 +524,8 @@ mla_bool_t mla_private_cli_process_parser_result(const mla_string_t& inputComman
                 outputStream.write(outputStream, 0, 1,  mla_r_cast<const mla_byte_t*>("\n"));
             }
         } else {
-
             // No possible completions found
             mla_private_cli_write_string(outputStream, mla_string("Type 'help' to see available commands.\n"));
-
         }
 
         return false;
@@ -408,7 +541,15 @@ mla_bool_t mla_private_cli_parser_parse_and_execute_command(mla_cli_app_t &app, 
     const mla_cli_parser_result parser_result = mla_cli_parser_parse(parser, command);
 
     // Process the result
-    return mla_private_cli_process_parser_result(command, parser_result, outputStream);
+    return mla_private_cli_process_parser_result(app, command, parser_result, outputStream);
+}
+
+void mla_cli_app_set_interactive(mla_cli_app_t& app, mla_bool_t isInteractive) {
+    app.is_interactive = isInteractive;
+}
+
+mla_bool_t mla_cli_app_is_interactive(const mla_cli_app_t& app) {
+    return app.is_interactive;
 }
 
 mla_cli_app_t mla_cli_app_empty() {
@@ -421,7 +562,12 @@ mla_cli_app_t mla_cli_app_empty() {
         0,                  // lastDrawnLength
         mla_array_list_empty<mla_init_struct(mla_string_t)>(), // history
         -1,                 // historyIndex
-        mla_string_empty()  // savedLiveLine
+        mla_string_empty(), // savedLiveLine
+        true,               // is_interactive
+        false,              // in_interactive_mode
+        mla_cli_command_t::init(), // interactive_command
+        mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>(), // interactive_parameters
+        0                   // interactive_param_index
     };
 }
 
@@ -435,7 +581,12 @@ mla_cli_app_t mla_cli_app_init(mla_cli_module_t &rootModule, mla_stream_output_t
         0,                  // lastDrawnLength
         mla_array_list<mla_init_struct(mla_string_t)>(8), // history
         -1,                 // historyIndex
-        mla_string_empty()  // savedLiveLine
+        mla_string_empty(), // savedLiveLine
+        true,               // is_interactive
+        false,              // in_interactive_mode
+        mla_cli_command_t::init(), // interactive_command
+        mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>(), // interactive_parameters
+        0                   // interactive_param_index
     };
 
     mla_private_cli_activate_module(app, rootModule);
@@ -499,7 +650,7 @@ void mla_private_cli_redraw_line(mla_cli_app_t &app, mla_stream_output_t &output
 
     // Return to column 0 and clear from cursor to end of line (ANSI CSI K)
     mla_private_cli_write_c_string(outputStream, "\r\x1b[K");
-    mla_private_cli_write_string(outputStream, mla_private_cli_build_module_prompt(app));
+    mla_private_cli_write_string(outputStream, mla_private_cli_build_prompt(app));
     mla_private_cli_write_string(outputStream, app.currentLine);
 
     // If the line shrank since the last render pass (e.g. after backspace),
@@ -690,6 +841,64 @@ mla_string_t mla_private_cli_longest_common_prefix(const mla_array_list_t<mla_in
 }
 
 void mla_private_cli_autocomplete(mla_cli_app_t &app, mla_stream_output_t &outputStream) {
+    if (app.in_interactive_mode) {
+        if (app.interactive_param_index < mla_array_list_size(app.interactive_command.parameters)) {
+            const mla_cli_command_parameter_t *param = mla_array_list_get_ref(app.interactive_command.parameters, app.interactive_param_index);
+            if (param != nullptr && param->value_autocomplete_fn != nullptr) {
+                mla_array_list_t<mla_init_struct(mla_string_t)> rawCandidates =
+                    param->value_autocomplete_fn(app.interactive_command, param->parameterName, app.currentLine, app.interactive_command.user_data);
+
+                mla_array_list_t<mla_init_struct(mla_string_t)> completions = mla_array_list_empty<mla_init_struct(mla_string_t)>();
+                mla_size_t prefixLen = mla_string_length(app.currentLine);
+                for (mla_size_t i = 0; i < mla_array_list_size(rawCandidates); ++i) {
+                    const mla_string_t *cand = mla_array_list_get_ref(rawCandidates, i);
+                    if (cand != nullptr && mla_string_starts_with(*cand, app.currentLine)) {
+                        mla_string_t suffix = mla_string_substr(*cand, prefixLen);
+                        if (mla_string_length(suffix) > 0) {
+                            mla_array_list_add(completions, suffix);
+                        }
+                    }
+                }
+
+                mla_size_t completionCount = mla_array_list_size(completions);
+                if (completionCount == 0) {
+                    mla_private_cli_write_c_string(outputStream, "\a");
+                    return;
+                }
+                if (completionCount == 1) {
+                    mla_string_t *completion = mla_array_list_get_ref(completions, 0);
+                    app.currentLine = mla_string_concat(app.currentLine, *completion);
+                    app.cursorPos = mla_string_length(app.currentLine);
+                    mla_private_cli_redraw_line(app, outputStream);
+                    return;
+                }
+                mla_string_t lcp = mla_private_cli_longest_common_prefix(completions);
+                mla_size_t lcpLen = mla_string_length(lcp);
+                if (lcpLen > 0) {
+                    app.currentLine = mla_string_concat(app.currentLine, lcp);
+                    app.cursorPos = mla_string_length(app.currentLine);
+                }
+                mla_private_cli_write_c_string(outputStream, "\r\n");
+                for (mla_size_t i = 0; i < completionCount; ++i) {
+                    mla_string_t *completion = mla_array_list_get_ref(completions, i);
+                    mla_private_cli_write_c_string(outputStream, "  ");
+                    mla_private_cli_write_string(outputStream, app.currentLine);
+                    if (lcpLen > 0 && mla_string_starts_with(*completion, lcp)) {
+                        mla_string_t remainingSuffix = mla_string_substr(*completion, lcpLen);
+                        mla_private_cli_write_string(outputStream, remainingSuffix);
+                    } else {
+                        mla_private_cli_write_string(outputStream, *completion);
+                    }
+                    mla_private_cli_write_c_string(outputStream, "\n");
+                }
+                mla_private_cli_redraw_line(app, outputStream);
+                return;
+            }
+        }
+        mla_private_cli_write_c_string(outputStream, "\a");
+        return;
+    }
+
     mla_cli_parser_t parser = mla_private_cli_setup_parser(app);
     mla_cli_parser_result result = mla_cli_parser_parse(parser, app.currentLine);
 
@@ -751,6 +960,10 @@ mla_bool_t mla_private_cli_commit_line(mla_cli_app_t &app, mla_stream_output_t &
     app.historyIndex = -1;
     app.savedLiveLine = mla_string_empty();
 
+    if (app.in_interactive_mode) {
+        return mla_private_cli_process_interactive_input(app, line, outputStream);
+    }
+
     mla_bool_t success = true;
 
     if (!mla_string_is_empty(line)) {
@@ -777,7 +990,7 @@ mla_bool_t mla_private_cli_commit_line(mla_cli_app_t &app, mla_stream_output_t &
 
                 success = mla_private_cli_parser_parse_and_execute_command(app, command, outputStream);
 
-                if (!success) {
+                if (!success || app.in_interactive_mode) {
                     break;
                 }
 
@@ -787,7 +1000,9 @@ mla_bool_t mla_private_cli_commit_line(mla_cli_app_t &app, mla_stream_output_t &
 
     }
 
-    mla_private_cli_write_module_prompt(app, outputStream);
+    if (!app.in_interactive_mode) {
+        mla_private_cli_write_module_prompt(app, outputStream);
+    }
     return success;
 }
 
@@ -810,9 +1025,18 @@ mla_bool_t mla_private_cli_handle_normal_byte(mla_cli_app_t &app, mla_uint8_t b,
             return true;
         case 0x7F: // DEL (Backspace on most terminals)
         case 0x08: // BS  (Ctrl-H / Backspace)
-            mla_private_cli_editor_backspace(app);
-            mla_private_cli_redraw_line(app, outputStream);
+        {
+            mla_size_t oldLen = mla_string_length(app.currentLine);
+            if (app.cursorPos == oldLen && oldLen > 0) {
+                mla_private_cli_editor_backspace(app);
+                app.lastDrawnLength = app.cursorPos;
+                mla_private_cli_write_c_string(outputStream, "\b \b");
+            } else {
+                mla_private_cli_editor_backspace(app);
+                mla_private_cli_redraw_line(app, outputStream);
+            }
             return true;
+        }
         case 0x03: // Ctrl-C -> discard the current line
             mla_private_cli_write_c_string(outputStream, "^C\r\n");
             app.currentLine = mla_string_empty();
@@ -820,6 +1044,9 @@ mla_bool_t mla_private_cli_handle_normal_byte(mla_cli_app_t &app, mla_uint8_t b,
             app.lastDrawnLength = 0;
             app.historyIndex = -1;
             app.savedLiveLine = mla_string_empty();
+            if (app.in_interactive_mode) {
+                app.in_interactive_mode = false;
+            }
             mla_private_cli_write_module_prompt(app, outputStream);
             return true;
         default:
@@ -828,8 +1055,15 @@ mla_bool_t mla_private_cli_handle_normal_byte(mla_cli_app_t &app, mla_uint8_t b,
 
     // Printable ASCII: insert it at the cursor. All other control bytes are ignored.
     if (b >= 0x20 && b <= 0x7E) {
-        mla_private_cli_editor_insert_char(app, mla_s_cast<mla_char_t>(b));
-        mla_private_cli_redraw_line(app, outputStream);
+        mla_size_t oldLen = mla_string_length(app.currentLine);
+        if (app.cursorPos == oldLen) {
+            mla_private_cli_editor_insert_char(app, mla_s_cast<mla_char_t>(b));
+            app.lastDrawnLength = app.cursorPos;
+            outputStream.write(outputStream, 0, 1, mla_r_cast<const mla_byte_t*>(&b));
+        } else {
+            mla_private_cli_editor_insert_char(app, mla_s_cast<mla_char_t>(b));
+            mla_private_cli_redraw_line(app, outputStream);
+        }
     }
 
     return true;

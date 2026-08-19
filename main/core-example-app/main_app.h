@@ -44,7 +44,7 @@ int run(int argc = 0, char** argv = nullptr) {
 
     mla_info("Starting Test Application...");
     mla_info("Test Application started successfully!");
-    main_app_cli_init();
+    main_app_cli_init(argc, argv);
 
     //mla_ui_control_surface_process_task_t task = main_app_main_window_performance_t::renderer;
     mla_ui_control_surface_process_task_t task = main_app_main_window_t::renderer;

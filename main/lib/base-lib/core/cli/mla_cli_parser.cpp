@@ -246,12 +246,14 @@ mla_cli_parser_result mla_cli_parser_parse(const mla_cli_parser_t &parser, const
         mla_hash_map_push(result.matchingParameters, paramName, paramValue);
         matchedPositon = paramValueEnd;
 
-        if ((paramValueEnd == commandLength || (paramValueEnd < commandLength && commandData[paramValueEnd] == ' ')) &&
+        if (paramValueEnd == commandLength &&
             matchingParamRef != nullptr && matchingParamRef->value_autocomplete_fn != nullptr) {
             activeParamForValueAutocomplete = paramName;
             activeParamValuePrefix = paramValue;
             isValueAutocompleteActive = true;
         } else {
+            activeParamForValueAutocomplete = mla_string_empty();
+            activeParamValuePrefix = mla_string_empty();
             isValueAutocompleteActive = false;
         }
 

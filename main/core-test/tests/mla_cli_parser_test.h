@@ -470,6 +470,71 @@ inline void AutoCompleteParameterValuesDynamicCallback() {
     }
 }
 
+static mla_array_list_t<mla_init_struct(mla_string_t)> commit_name_autocomplete(
+    const mla_cli_command_t &command,
+    const mla_string_t &parameterName,
+    const mla_string_t &currentValuePrefix,
+    const mla_user_data_t &userData) {
+    (void)command;
+    (void)parameterName;
+    (void)userData;
+    mla_array_list_t<mla_init_struct(mla_string_t)> list =
+        mla_array_list_empty<mla_init_struct(mla_string_t)>();
+    mla_array_list_add(list, mla_string_const("add-auto-update"));
+    mla_array_list_add(list, mla_string_const("fix-cli"));
+    mla_array_list_add(list, mla_string_const("build-test"));
+    return mla_cli_parameter_value_autocomplete_filter_candidates(list, currentValuePrefix);
+}
+
+static mla_array_list_t<mla_init_struct(mla_string_t)> commit_message_autocomplete(
+    const mla_cli_command_t &command,
+    const mla_string_t &parameterName,
+    const mla_string_t &currentValuePrefix,
+    const mla_user_data_t &userData) {
+    (void)command;
+    (void)parameterName;
+    (void)userData;
+    mla_array_list_t<mla_init_struct(mla_string_t)> list =
+        mla_array_list_empty<mla_init_struct(mla_string_t)>();
+    mla_array_list_add(list, mla_string_const("add http update"));
+    mla_array_list_add(list, mla_string_const("add new feature"));
+    return mla_cli_parameter_value_autocomplete_filter_candidates(list, currentValuePrefix);
+}
+
+inline void AutoCompleteMultipleParametersSequential() {
+    mla_cli_parser_t parser = mla_cli_parser();
+
+    mla_cli_command_t cmdCommit = mla_cli_command(mla_string_const("commit"), nullptr);
+    mla_cli_command_parameter_t nameParam = mla_cli_command_parameter(
+        mla_string_const("name"), mla_string_const("Commit name"), true, false, commit_name_autocomplete);
+    mla_cli_command_parameter_t msgParam = mla_cli_command_parameter(
+        mla_string_const("message"), mla_string_const("Commit message"), false, false, commit_message_autocomplete);
+    mla_cli_command_add_parameter(cmdCommit, nameParam);
+    mla_cli_command_add_parameter(cmdCommit, msgParam);
+    mla_array_list_add(parser.availableCommands, cmdCommit);
+
+    // Case 1: First parameter value autocomplete (prefix 'add-') -> 'auto-update'
+    auto result1 = mla_cli_parser_parse(parser, mla_string("commit --name add-"));
+    assert_equal(mla_array_list_size(result1.possibleAutoCompletions), (mla_size_t)1, "Should complete 'add-' to 'auto-update'");
+    if (mla_array_list_size(result1.possibleAutoCompletions) == 1) {
+        assert_struct_equal(mla_string_t, *mla_array_list_get_ref(result1.possibleAutoCompletions, 0), mla_string("auto-update"), "Suffix should be 'auto-update'");
+    }
+
+    // Case 2: Trailing space after completed first parameter value -> should suggest remaining parameter '--message', NOT values of '--name'
+    auto result2 = mla_cli_parser_parse(parser, mla_string("commit --name add-auto-update "));
+    assert_equal(mla_array_list_size(result2.possibleAutoCompletions), (mla_size_t)1, "Should suggest remaining parameter --message");
+    if (mla_array_list_size(result2.possibleAutoCompletions) == 1) {
+        assert_struct_equal(mla_string_t, *mla_array_list_get_ref(result2.possibleAutoCompletions, 0), mla_string(" --message"), "Suggestion should be ' --message'");
+    }
+
+    // Case 3: Second parameter value autocomplete with quote prefix
+    auto result3 = mla_cli_parser_parse(parser, mla_string("commit --name add-auto-update --message \"add http "));
+    assert_equal(mla_array_list_size(result3.possibleAutoCompletions), (mla_size_t)1, "Should complete second parameter value");
+    if (mla_array_list_size(result3.possibleAutoCompletions) == 1) {
+        assert_struct_equal(mla_string_t, *mla_array_list_get_ref(result3.possibleAutoCompletions, 0), mla_string("update"), "Suffix should be 'update'");
+    }
+}
+
 void RegisterCliParserTests(mla_test_executor_t &p_TestExecutor) {
 
     mla_test_t test = mla_test("CommandWithParameters", test_category, ParseCommandWithParameters);
@@ -544,6 +609,9 @@ void RegisterCliParserTests(mla_test_executor_t &p_TestExecutor) {
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("AutoCompleteParameterValuesDynamicCallback", test_category, AutoCompleteParameterValuesDynamicCallback);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("AutoCompleteMultipleParametersSequential", test_category, AutoCompleteMultipleParametersSequential);
     mla_test_executor_register_test(p_TestExecutor, test);
 }
 
