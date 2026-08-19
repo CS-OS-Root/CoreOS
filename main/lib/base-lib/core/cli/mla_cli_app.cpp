@@ -810,9 +810,18 @@ mla_bool_t mla_private_cli_handle_normal_byte(mla_cli_app_t &app, mla_uint8_t b,
             return true;
         case 0x7F: // DEL (Backspace on most terminals)
         case 0x08: // BS  (Ctrl-H / Backspace)
-            mla_private_cli_editor_backspace(app);
-            mla_private_cli_redraw_line(app, outputStream);
+        {
+            mla_size_t oldLen = mla_string_length(app.currentLine);
+            if (app.cursorPos == oldLen && oldLen > 0) {
+                mla_private_cli_editor_backspace(app);
+                app.lastDrawnLength = app.cursorPos;
+                mla_private_cli_write_c_string(outputStream, "\b \b");
+            } else {
+                mla_private_cli_editor_backspace(app);
+                mla_private_cli_redraw_line(app, outputStream);
+            }
             return true;
+        }
         case 0x03: // Ctrl-C -> discard the current line
             mla_private_cli_write_c_string(outputStream, "^C\r\n");
             app.currentLine = mla_string_empty();
@@ -828,8 +837,15 @@ mla_bool_t mla_private_cli_handle_normal_byte(mla_cli_app_t &app, mla_uint8_t b,
 
     // Printable ASCII: insert it at the cursor. All other control bytes are ignored.
     if (b >= 0x20 && b <= 0x7E) {
-        mla_private_cli_editor_insert_char(app, mla_s_cast<mla_char_t>(b));
-        mla_private_cli_redraw_line(app, outputStream);
+        mla_size_t oldLen = mla_string_length(app.currentLine);
+        if (app.cursorPos == oldLen) {
+            mla_private_cli_editor_insert_char(app, mla_s_cast<mla_char_t>(b));
+            app.lastDrawnLength = app.cursorPos;
+            outputStream.write(outputStream, 0, 1, mla_r_cast<const mla_byte_t*>(&b));
+        } else {
+            mla_private_cli_editor_insert_char(app, mla_s_cast<mla_char_t>(b));
+            mla_private_cli_redraw_line(app, outputStream);
+        }
     }
 
     return true;

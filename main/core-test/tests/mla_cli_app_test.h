@@ -727,6 +727,102 @@ inline void BackspacePostAutocompleteTest() {
     assert_struct_equal(mla_string_t, app.currentLine, mla_string("create --sour"), "Backspace should delete 'c' cleanly");
 }
 
+static mla_array_list_t<mla_init_struct(mla_string_t)> test_name_autocomplete(
+    const mla_cli_command_t &command,
+    const mla_string_t &parameterName,
+    const mla_string_t &currentValuePrefix,
+    const mla_user_data_t &userData) {
+    (void)command; (void)parameterName; (void)userData;
+    mla_array_list_t<mla_init_struct(mla_string_t)> list = mla_array_list_empty<mla_init_struct(mla_string_t)>();
+    mla_array_list_add(list, mla_string_const("add-auto-update"));
+    mla_array_list_add(list, mla_string_const("fix-cli"));
+    return mla_cli_parameter_value_autocomplete_filter_candidates(list, currentValuePrefix);
+}
+
+static mla_array_list_t<mla_init_struct(mla_string_t)> test_msg_autocomplete(
+    const mla_cli_command_t &command,
+    const mla_string_t &parameterName,
+    const mla_string_t &currentValuePrefix,
+    const mla_user_data_t &userData) {
+    (void)command; (void)parameterName; (void)userData;
+    mla_array_list_t<mla_init_struct(mla_string_t)> list = mla_array_list_empty<mla_init_struct(mla_string_t)>();
+    mla_array_list_add(list, mla_string_const("add http update"));
+    mla_array_list_add(list, mla_string_const("fix bugs"));
+    return mla_cli_parameter_value_autocomplete_filter_candidates(list, currentValuePrefix);
+}
+
+inline void LineEditingDirectEchoTest() {
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_memory_stream_t memStream = mla_memory_stream_empty();
+    mla_cli_app_t app = mla_cli_app_init(root, memStream.output);
+
+    // Reset memory stream to ignore the initial prompt
+    mla_memory_stream_reset(memStream);
+
+    // Typing single character at end of line should directly echo the character without redraw ANSI escapes
+    FeedCliInput(app, memStream.output, mla_string("a"));
+    mla_size_t size = mla_memory_stream_get_size(memStream);
+    assert_equal(size, (mla_size_t)1, "Direct typing at end of line should output exactly 1 byte");
+
+    mla_memory_stream_set_position(memStream, 0);
+    mla_byte_t buf[16] = {0};
+    memStream.input.read(memStream.input, 0, size, buf);
+    assert_equal((mla_char_t)buf[0], 'a', "Output byte should be 'a'");
+}
+
+inline void LineEditingBackspaceEchoTest() {
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_memory_stream_t memStream = mla_memory_stream_empty();
+    mla_cli_app_t app = mla_cli_app_init(root, memStream.output);
+
+    // Type two characters
+    FeedCliInput(app, memStream.output, mla_string("ab"));
+    mla_memory_stream_reset(memStream);
+
+    // Backspace at end of line should emit '\b \b' (3 bytes)
+    FeedCliInput(app, memStream.output, mla_string("\x7f"));
+    mla_size_t size = mla_memory_stream_get_size(memStream);
+    assert_equal(size, (mla_size_t)3, "Backspace at end of line should emit 3 bytes (\\b \\b)");
+
+    mla_memory_stream_set_position(memStream, 0);
+    mla_byte_t buf[16] = {0};
+    memStream.input.read(memStream.input, 0, size, buf);
+    assert_equal((mla_char_t)buf[0], '\b', "First byte should be backspace");
+    assert_equal((mla_char_t)buf[1], ' ', "Second byte should be space");
+    assert_equal((mla_char_t)buf[2], '\b', "Third byte should be backspace");
+}
+
+inline void MultiParameterInteractiveTypingTest() {
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_cli_command_t commitCmd = mla_cli_command(mla_string_const("commit"), nullptr);
+    mla_cli_command_parameter_t nameParam = mla_cli_command_parameter(
+        mla_string_const("name"), mla_string_const("Commit name"), true, false, test_name_autocomplete);
+    mla_cli_command_parameter_t msgParam = mla_cli_command_parameter(
+        mla_string_const("message"), mla_string_const("Commit message"), false, false, test_msg_autocomplete);
+    mla_cli_command_add_parameter(commitCmd, nameParam);
+    mla_cli_command_add_parameter(commitCmd, msgParam);
+    mla_cli_module_add_command(root, commitCmd);
+
+    mla_stream_output_t output = mla_stream_noop_output();
+    mla_cli_app_t app = mla_cli_app_init(root, output);
+
+    // Type command and first parameter prefix, then tab complete
+    FeedCliInput(app, output, mla_string("commit --name add-"));
+    FeedCliInput(app, output, mla_string("\t"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("commit --name add-auto-update"),
+                        "First parameter should autocomplete");
+
+    // Continue typing second parameter with quotes
+    FeedCliInput(app, output, mla_string(" --message \"add http "));
+    FeedCliInput(app, output, mla_string("\t"));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("commit --name add-auto-update --message \"add http update"),
+                        "Second parameter should autocomplete");
+
+    FeedCliInput(app, output, mla_string("\""));
+    assert_struct_equal(mla_string_t, app.currentLine, mla_string("commit --name add-auto-update --message \"add http update\""),
+                        "Closing quote should be appended cleanly");
+}
+
 inline void CliHistoryPersistenceTest() {
     mla_cli_history_store_t store = mla_cli_history_store_init(10);
     mla_string_t key = mla_string_const("sandbox:create:source");
@@ -822,6 +918,15 @@ inline void RegisterCliAppTests(mla_test_executor_t &p_TestExecutor) {
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("BackspacePostAutocomplete", test_category, BackspacePostAutocompleteTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("LineEditingDirectEcho", test_category, LineEditingDirectEchoTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("LineEditingBackspaceEcho", test_category, LineEditingBackspaceEchoTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("MultiParameterInteractiveTyping", test_category, MultiParameterInteractiveTypingTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
 #if !defined mla_test_disable_file_system || mla_test_disable_file_system != 1
