@@ -82,12 +82,14 @@ mla_string_t mla_string_copy(const mla_string_t &p_String) {
 mla_string_t mla_string_from_c_string(const mla_pointer_t& data, mla_size_t p_Length) {
     mla_string_t result =  {data, {{MLA_STRING_MEMORY_LAYOUT_C_STRING, 0, {0}}}};
     result.heap.length = p_Length;
+    result.heap.char_offset = 0;
     return result;
 }
 
 mla_string_t mla_string(const mla_pointer_t& data, mla_size_t p_Length) {
     mla_string_t result =  {data, {{MLA_STRING_MEMORY_LAYOUT_BUFFER, 0, {0}}}};
     result.heap.length = p_Length;
+    result.heap.char_offset = 0;
     return result;
 }
 
@@ -101,6 +103,7 @@ mla_string_t mla_string(const mla_pointer_t& data) {
 
     mla_string_t result =  {data, {{MLA_STRING_MEMORY_LAYOUT_C_STRING, 0, {0}}}};
     result.heap.length = mla_strlen(str_data);
+    result.heap.char_offset = 0;
     return result;
 }
 
@@ -114,6 +117,7 @@ mla_string_t mla_string(const mla_pointer_t& data, const mla_char_t *p_End) {
 
     mla_string_t result =  {data, {{MLA_STRING_MEMORY_LAYOUT_BUFFER, 0, {0}}}};
     result.heap.length = mla_s_cast<mla_size_t>(p_End - str_data);
+    result.heap.char_offset = 0;
     return result;
 }
 
@@ -137,6 +141,7 @@ mla_string_t mla_string(const mla_char_t *p_Data) {
 
     mla_string_t result =  {str_ptr, {{MLA_STRING_MEMORY_LAYOUT_C_STRING, 0, {0}}}};
     result.heap.length = length;
+    result.heap.char_offset = 0;
     return result;
 }
 
