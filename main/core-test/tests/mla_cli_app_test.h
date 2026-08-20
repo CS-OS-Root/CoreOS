@@ -1093,6 +1093,28 @@ inline void InteractivePromptCtrlCCancelTest() {
     assert_equal(mla_string_length(app.currentLine), (mla_size_t)0, "Line should be empty");
 }
 
+inline void InteractivePromptEscapeCancelsTest() {
+    test_interactive_executed = false;
+    test_interactive_saved_params = mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+
+    mla_cli_module_t root = mla_cli_module(mla_string_const("Root"));
+    mla_cli_command_t delCmd = mla_cli_command(mla_string_const("delete"), test_interactive_cmd_execute);
+    mla_cli_command_add_parameter(delCmd, mla_string_const("target"), true);
+    mla_cli_module_add_command(root, delCmd);
+
+    mla_stream_output_t output = mla_stream_noop_output();
+    mla_cli_app_t app = mla_cli_app_init(root, output);
+
+    FeedCliInput(app, output, mla_string("delete\n"));
+    assert_true(app.in_interactive_mode, "Should enter interactive mode");
+
+    // Cancel with Escape (0x1B)
+    FeedCliInput(app, output, mla_string("\x1b"));
+    assert_false(app.in_interactive_mode, "ESC should cancel interactive mode");
+    assert_false(test_interactive_executed, "Command should NOT execute after ESC");
+    assert_equal(mla_string_length(app.currentLine), (mla_size_t)0, "Line should be empty");
+}
+
 static mla_array_list_t<mla_init_struct(mla_string_t)> test_interactive_proto_autocomplete(
     const mla_cli_command_t &command,
     const mla_string_t &parameterName,
@@ -1239,6 +1261,9 @@ inline void RegisterCliAppTests(mla_test_executor_t &p_TestExecutor) {
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("InteractivePromptCtrlCCancel", test_category, InteractivePromptCtrlCCancelTest);
+    mla_test_executor_register_test(p_TestExecutor, test);
+
+    test = mla_test("InteractivePromptEscapeCancels", test_category, InteractivePromptEscapeCancelsTest);
     mla_test_executor_register_test(p_TestExecutor, test);
 
     test = mla_test("InteractivePromptTabAutocomplete", test_category, InteractivePromptTabAutocompleteTest);

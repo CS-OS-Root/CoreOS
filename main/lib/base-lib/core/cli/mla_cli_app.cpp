@@ -1006,12 +1006,29 @@ mla_bool_t mla_private_cli_commit_line(mla_cli_app_t &app, mla_stream_output_t &
     return success;
 }
 
+// Handles pressing the Escape key (ESC): cancels interactive parameter mode or clears the current line.
+void mla_private_cli_handle_escape_key(mla_cli_app_t &app, mla_stream_output_t &outputStream) {
+    mla_private_cli_write_c_string(outputStream, "\r\n");
+    app.currentLine = mla_string_empty();
+    app.cursorPos = 0;
+    app.lastDrawnLength = 0;
+    app.historyIndex = -1;
+    app.savedLiveLine = mla_string_empty();
+    if (app.in_interactive_mode) {
+        app.in_interactive_mode = false;
+        app.interactive_command = mla_cli_command_t::init();
+        app.interactive_parameters = mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+        app.interactive_param_index = 0;
+    }
+    mla_private_cli_write_module_prompt(app, outputStream);
+}
+
 // Handle a single byte while not inside an escape sequence.
 // Returns false if committing a command reported failure.
 mla_bool_t mla_private_cli_handle_normal_byte(mla_cli_app_t &app, mla_uint8_t b, mla_stream_output_t &outputStream) {
     switch (b) {
-        case 0x1B: // ESC -> possibly an ANSI escape sequence
-            app.escState = MLA_CLI_ESC_GOT_ESC;
+        case 0x1B: // ESC -> cancel interactive mode or clear line
+            mla_private_cli_handle_escape_key(app, outputStream);
             return true;
         case 0x00:
         case 0xE0: // Windows conio special-key prefix
@@ -1046,6 +1063,9 @@ mla_bool_t mla_private_cli_handle_normal_byte(mla_cli_app_t &app, mla_uint8_t b,
             app.savedLiveLine = mla_string_empty();
             if (app.in_interactive_mode) {
                 app.in_interactive_mode = false;
+                app.interactive_command = mla_cli_command_t::init();
+                app.interactive_parameters = mla_hash_map_empty<mla_init_struct(mla_string_t), mla_string_hash_t, mla_init_struct(mla_string_t)>();
+                app.interactive_param_index = 0;
             }
             mla_private_cli_write_module_prompt(app, outputStream);
             return true;
@@ -1153,10 +1173,19 @@ mla_bool_t mla_cli_app_update_and_process_input(mla_cli_app_t &app, mla_stream_i
                     app.escState = MLA_CLI_ESC_GOT_CSI;
                     app.escParam = 0;
                 } else {
-                    // Lone ESC (or Alt-<key>): handle this byte normally
+                    // Lone ESC followed by non-'[' byte: execute standalone ESC, then handle byte b
                     app.escState = MLA_CLI_ESC_NORMAL;
-                    if (!mla_private_cli_handle_normal_byte(app, b, outputStream)) {
-                        success = false;
+                    mla_private_cli_handle_escape_key(app, outputStream);
+                    if (b == 0x1B) {
+                        if (i == bytesRead - 1) {
+                            mla_private_cli_handle_escape_key(app, outputStream);
+                        } else {
+                            app.escState = MLA_CLI_ESC_GOT_ESC;
+                        }
+                    } else if (b != '\r' && b != '\n') {
+                        if (!mla_private_cli_handle_normal_byte(app, b, outputStream)) {
+                            success = false;
+                        }
                     }
                 }
                 break;
@@ -1167,8 +1196,20 @@ mla_bool_t mla_cli_app_update_and_process_input(mla_cli_app_t &app, mla_stream_i
                 mla_private_cli_handle_win_key(app, b, outputStream);
                 break;
             default:
-                if (!mla_private_cli_handle_normal_byte(app, b, outputStream)) {
-                    success = false;
+                if (b == 0x1B) {
+                    if (app.in_interactive_mode && i == bytesRead - 1) {
+                        // In interactive mode, a lone ESC immediately cancels interactive prompt
+                        mla_private_cli_handle_escape_key(app, outputStream);
+                        app.escState = MLA_CLI_ESC_NORMAL;
+                    } else {
+                        app.escState = MLA_CLI_ESC_GOT_ESC;
+                    }
+                } else if (b == 0x00 || b == 0xE0) {
+                    app.escState = MLA_CLI_ESC_GOT_WIN;
+                } else {
+                    if (!mla_private_cli_handle_normal_byte(app, b, outputStream)) {
+                        success = false;
+                    }
                 }
                 break;
         }
