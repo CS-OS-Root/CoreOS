@@ -278,26 +278,11 @@ foreach ($item in $processedReleaseDirs) {
 }
 
 if ($uploadSuccess) {
-    # Git release tag only if uploads succeeded
-    Write-Host "========================================================================" -ForegroundColor Cyan
-    Write-Host "Creating Git Release Tag v$targetVersion..." -ForegroundColor Cyan
-    Write-Host "========================================================================" -ForegroundColor Cyan
-
-    $gitTag = "v$targetVersion"
-    & git tag -l $gitTag | Out-Null
-    if ($LASTEXITCODE -eq 0) {
-        & git tag -a $gitTag -m "Release $gitTag"
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "Successfully created git tag '$gitTag'." -ForegroundColor Green
-            & git push origin $gitTag
-        }
-    }
-
     Write-Host "Successfully published release $targetVersion to $releasesServerUrl/$productName/$targetVersion/" -ForegroundColor Green
     $global:LASTEXITCODE = 0
     exit 0
 } else {
-    Write-Host "Error: Release publish failed due to upload errors. Git tag creation aborted." -ForegroundColor Red
+    Write-Host "Error: Release publish failed due to upload errors." -ForegroundColor Red
     $global:LASTEXITCODE = 1
     exit 1
 }

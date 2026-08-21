@@ -32,7 +32,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  --config <name>, -c <name>   Build release for a specific configuration"
-            echo "  --publish                    Upload release binaries to Miniserve and create git tag"
+            echo "  --publish                    Upload release binaries to Miniserve"
             echo "  --version <ver>, -v <ver>    Specify release version (e.g. 0.0.2). If omitted, auto-increments from server"
             echo "  --help, -h                   Show this help message"
             return 0 2>/dev/null || exit 0
@@ -336,32 +336,11 @@ echo "Uploading root version file to /${PRODUCT_NAME}/version ..."
 curl -s -o /dev/null -F "path=@$WORKSPACE_DIR/release/version" "${RELEASES_SERVER_URL}/upload?path=/${PRODUCT_NAME}" || true
 
 if [ "$upload_success" = true ]; then
-    # Create Git Tag only after successful uploads
-    echo "========================================================================"
-    echo "Creating Git Release Tag v${VERSION}..."
-    echo "========================================================================"
-
-    git_tag="v${VERSION}"
-    if git rev-parse "$git_tag" >/dev/null 2>&1; then
-        echo "Warning: Git tag '$git_tag' already exists."
-    else
-        git tag -a "$git_tag" -m "Release $git_tag"
-        if [ $? -eq 0 ]; then
-            echo "Successfully created git tag '$git_tag'."
-            
-            if git remote | grep -q 'origin'; then
-                echo "Pushing tag '$git_tag' to remote origin..."
-                git push origin "$git_tag"
-            fi
-        else
-            echo "Error: Failed to create git tag '$git_tag'."
-        fi
-    fi
     echo "========================================================================"
     echo "Successfully published release $VERSION to $RELEASES_SERVER_URL/${PRODUCT_NAME}/${VERSION}/"
     echo "========================================================================"
     return 0 2>/dev/null || exit 0
 else
-    echo "Error: Release publish failed due to upload errors. Git tag creation aborted."
+    echo "Error: Release publish failed due to upload errors."
     return 1 2>/dev/null || exit 1
 fi
