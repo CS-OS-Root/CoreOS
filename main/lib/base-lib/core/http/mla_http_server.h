@@ -65,7 +65,7 @@ mla_bool_t mla_http_request_handler_checker_execute(const mla_user_data_t &userd
         return false;
     }
 
-    return T::http_request_check(&handler_struct, userdata, request.url, compare_mode);
+    return T::http_request_check(*handler_struct, userdata, request.url, compare_mode);
 }
 
 template<typename T>
