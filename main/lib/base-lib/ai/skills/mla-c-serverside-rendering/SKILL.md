@@ -17,6 +17,9 @@ This approach achieves:
 ## Architecture Overview
 
 ```
+ [ Module Configuration ]
+   └── lib/<module>/webapp.json   ──> Explicit list of web application paths to compile
+
  [ Source Files ]
    ├── <app_name>.web.header.h   ──> Input struct & template helper functions
    ├── *.mla-template.html       ──> HTML with embedded <% %> & <%= %> tags
@@ -35,6 +38,25 @@ This approach achieves:
  [ Generated Output Header ]
    └── <app_name>.web.h          ──> Single C++ header to include & register
 ```
+
+---
+
+## Module Configuration: `webapp.json`
+
+Every library module containing web applications declares a `webapp.json` file directly inside its module root under `lib/<module>/` (e.g. `lib/build/webapp.json`).
+
+The `webapp.json` file is the **single source of truth** for apps to compile or watch. It contains an `"apps"` array listing relative paths to the web app folders:
+
+```json
+{
+  "apps": [
+    "workspace/webapp/content_app",
+    "workspace/webapp/dashboard_app"
+  ]
+}
+```
+
+> **Note:** The app name does not need to be declared in `webapp.json`; it is always derived directly from the `<app_name>.web.header.h` file name inside each app directory.
 
 ---
 
@@ -107,28 +129,41 @@ The `mla-build-app` compilation engine (`lib/build/workspace/webapp/mla_build_we
 
 ## CLI Module: `mla-build-app webapp`
 
-The build tool provides the `webapp` CLI module for building and live-developing web applications.
+The build tool provides the `webapp` CLI module for creating, building, and live-developing web applications.
 
-### 1. Build Web Applications
+### 1. Create a New Web Application (`webapp create`)
+Scaffolds a new web application and automatically registers it in the nearest module's `webapp.json`:
+
+```bash
+# Create a new web app scaffold and register it in webapp.json
+mla-build-app "webapp && create --name dashboard --path lib/my-module/dashboard_app"
+```
+
+Parameters:
+- `--name` (**Required**): Identifier of the web application (e.g. `dashboard`).
+- `--path` (**Required**): Directory where `<name>.web.header.h` and `index.mla-template.html` will be scaffolded.
+- `--verbose` (Optional): Enable verbose status output.
+
+### 2. Build Web Applications (`webapp build`)
 Compiles templates and static files into `.web.h` headers:
 
 ```bash
-# Build all web apps in the workspace under /main
+# Zero-config root execution: builds all apps configured in lib/*/webapp.json
 mla-build-app webapp build
 
-# Build a specific directory recursively
-mla-build-app webapp build --path /path/to/webapp --recursive true --verbose
+# Build a specific directory explicitly
+mla-build-app webapp build --path lib/my-module/dashboard_app --verbose
 ```
 
-### 2. Live Development & Watch Mode
+### 3. Live Development & Watch Mode (`webapp watch`)
 Starts a live HTTP server on `http://127.0.0.1:5080` that serves dynamic template changes instantly without restarting:
 
 ```bash
-# Start watch mode on default workspace
+# Start watch mode on all apps declared in lib/*/webapp.json
 mla-build-app webapp watch
 
 # Watch a specific path with verbose logging
-mla-build-app webapp watch --path /path/to/webapp --verbose
+mla-build-app webapp watch --path lib/my-module/dashboard_app --verbose
 ```
 
 In watch mode:
@@ -140,7 +175,15 @@ In watch mode:
 
 ## Step-by-Step Implementation Example
 
-### Step 1: Create the App Header (`dashboard.web.header.h`)
+### Step 1: Scaffold the App with `webapp create`
+
+```bash
+./build/clang/mla-build-app "webapp && create --name dashboard --path lib/my-module/dashboard_app"
+```
+
+This generates `lib/my-module/dashboard_app/dashboard.web.header.h`, `index.mla-template.html`, and registers the app in `lib/my-module/webapp.json`.
+
+### Step 2: Customize the App Header (`dashboard.web.header.h`)
 
 ```cpp
 #ifndef DASHBOARD_WEB_HEADER_H
@@ -165,7 +208,7 @@ struct mla_web_app_dashboard_input_t {
 #endif // DASHBOARD_WEB_HEADER_H
 ```
 
-### Step 2: Create the Template (`index.mla-template.html`)
+### Step 3: Customize the Template (`index.mla-template.html`)
 
 ```html
 <!DOCTYPE html>
@@ -191,16 +234,16 @@ struct mla_web_app_dashboard_input_t {
 </html>
 ```
 
-### Step 3: Compile the Web App
+### Step 4: Compile the Web App
 
 Run the build command:
 ```bash
-./build/clang/mla-build-app webapp build --path lib/my-module/dashboard
+./build/clang/mla-build-app webapp build
 ```
 
-This produces `dashboard.web.h` in the same directory.
+This produces `dashboard.web.h` in `lib/my-module/dashboard_app/`.
 
-### Step 4: Register & Serve with `mla_http_server_t`
+### Step 5: Register & Serve with `mla_http_server_t`
 
 ```cpp
 #include "dashboard.web.h"
@@ -320,8 +363,10 @@ chmod +x "$BINARY_NAME"
 
 ## Best Practices & Guidelines
 
-1. **Never Modify `.web.h` Directly**: All changes must be made in `<app_name>.web.header.h`, `*.mla-template.html`, or static assets, and regenerated via `webapp build`.
-2. **Keep Business Logic in Helpers**: Template files should focus on UI layout and formatting. Place complex queries or calculations in inline helper functions within `<app_name>.web.header.h`.
-3. **Use Framework Memory Conventions**: When allocating strings or lists in templates, ensure proper MLA-C reference counting rules are followed.
-4. **Use Chunked Encoding for Large Dynamic Content**: HTML templates automatically stream via chunked encoding, avoiding buffer size limitations for large rendered pages.
-5. **Static Assets Organization**: Place relative assets (e.g. `style.css`, `logo.png`) inside the app directory alongside `index.mla-template.html` so they are bundled and gzipped automatically under `/<app_name>/<asset_name>`.
+1. **Explicit Target Declaration**: Declare all web application directories in `lib/<module>/webapp.json` so zero-config builds and watch commands operate on exact target sets.
+2. **Scaffold with `webapp create`**: Use `mla-build-app "webapp && create --name <name> --path <path>"` to quickly create template scaffolding and auto-update `webapp.json`.
+3. **Never Modify `.web.h` Directly**: All changes must be made in `<app_name>.web.header.h`, `*.mla-template.html`, or static assets, and regenerated via `webapp build`.
+4. **Keep Business Logic in Helpers**: Template files should focus on UI layout and formatting. Place complex queries or calculations in inline helper functions within `<app_name>.web.header.h`.
+5. **Use Framework Memory Conventions**: When allocating strings or lists in templates, ensure proper MLA-C reference counting rules are followed.
+6. **Use Chunked Encoding for Large Dynamic Content**: HTML templates automatically stream via chunked encoding, avoiding buffer size limitations for large rendered pages.
+7. **Static Assets Organization**: Place relative assets (e.g. `style.css`, `logo.png`) inside the app directory alongside `index.mla-template.html` so they are bundled and gzipped automatically under `/<app_name>/<asset_name>`.
