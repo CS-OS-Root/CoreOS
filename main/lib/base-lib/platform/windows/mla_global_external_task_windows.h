@@ -256,7 +256,10 @@ mla_external_task_state mla_private_windows_external_task_get_state(const mla_po
     }
 
     processData->result_code = mla_s_cast<mla_int32_t>(exitCode);
-    mla_private_windows_external_task_cleanup_process_data(processData);
+    if (processData->stdin_write_handle != nullptr) {
+        CloseHandle(processData->stdin_write_handle);
+        processData->stdin_write_handle = nullptr;
+    }
     mla_private_windows_external_task_cleanup_process_handles(processData);
     return MLA_EXTERNAL_TASK_STATE_STOPPED;
 }
@@ -364,7 +367,10 @@ mla_int32_t mla_private_windows_external_task_read_result_code(const mla_pointer
     }
 
     processData->result_code = mla_s_cast<mla_int32_t>(exitCode);
-    mla_private_windows_external_task_cleanup_process_data(processData);
+    if (processData->stdin_write_handle != nullptr) {
+        CloseHandle(processData->stdin_write_handle);
+        processData->stdin_write_handle = nullptr;
+    }
     mla_private_windows_external_task_cleanup_process_handles(processData);
 
     return processData->result_code;
