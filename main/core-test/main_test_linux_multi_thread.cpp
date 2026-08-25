@@ -10,6 +10,7 @@
 #include "../lib/base-lib/platform/linux/mla_global_network_linux.h"
 #include "../lib/base-lib/platform/linux/mla_global_file_system_linux.h"
 #include "../lib/base-lib/platform/linux/mla_global_external_task_linux.h"
+#include "../lib/base-lib/platform/linux/mla_global_service_linux.h"
 #include "../lib/base-lib/platform/linux/mla_global_platform_task_manager_linux.h"
 
 /*

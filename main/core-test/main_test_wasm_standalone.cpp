@@ -4,6 +4,7 @@
 
 #include "../lib/base-lib/platform/wasm/mla_global_platform_wasm_standalone.h"
 #include "../lib/base-lib/platform/generic/mla_global_config_inmemory.h"
+#include "../lib/base-lib/platform/generic/mla_global_service_disabled.h"
 #include "../lib/base-lib/platform/wasm/mla_global_platform_task_manager_wasm.h"
 
 

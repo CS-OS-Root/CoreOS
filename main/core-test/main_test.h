@@ -53,6 +53,10 @@
 #include "tests/mla_external_task_test.h"
 #endif
 
+#if defined(MLA_SERVICE_SUPPORTED) && MLA_SERVICE_SUPPORTED == 1
+#include "tests/mla_service_test.h"
+#endif
+
 #if !defined mla_test_disable_network || mla_test_disable_network != 1
 // Network
 #include "tests/mla_http_chunked_stream_test.h"
@@ -121,6 +125,10 @@ int run(mla_test_bool_t runTest, mla_test_bool_t runBenchmark, mla_test_output_f
 
 #if !defined mla_test_disable_external_task || mla_test_disable_external_task != 1
     RegisterExternalTaskTests(l_TestExecutor);
+#endif
+
+#if defined(MLA_SERVICE_SUPPORTED) && MLA_SERVICE_SUPPORTED == 1
+    RegisterServiceTests(l_TestExecutor);
 #endif
 
 #if !defined mla_test_disable_network || mla_test_disable_network != 1

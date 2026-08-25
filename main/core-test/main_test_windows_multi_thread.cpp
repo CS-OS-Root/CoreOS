@@ -8,6 +8,7 @@
 #include "../lib/base-lib/platform/windows/mla_global_config_windows.h"
 #include "../lib/base-lib/platform/windows/mla_global_platform_task_manager_windows.h"
 #include "../lib/base-lib/platform/windows/mla_global_external_task_windows.h"
+#include "../lib/base-lib/platform/windows/mla_global_service_windows.h"
 
 
 #include "../lib/base-lib/test-support/mla_test_data_types.h"

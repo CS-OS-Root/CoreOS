@@ -59,6 +59,7 @@ if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
             ${SOURCE_NETWORK_FILES}
             ${SOURCE_FILE_SYSTEM_FILES}
             ${SOURCE_UPDATE_FILES}
+            ${SOURCE_SERVICE_FILES}
             ${SOURCE_TEST_FILES}
     )
     add_executable(MLA_C_Test_Linux_Single_Thread ${SOURCE_FILES_LINUX_SINGLE_THREAD})
@@ -75,6 +76,7 @@ if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
             ${SOURCE_NETWORK_FILES}
             ${SOURCE_FILE_SYSTEM_FILES}
             ${SOURCE_UPDATE_FILES}
+            ${SOURCE_SERVICE_FILES}
             ${SOURCE_TEST_FILES}
     )
     add_executable(MLA_C_Test_Linux_Multi_Thread ${SOURCE_FILES_LINUX_MULTI_THREAD})
@@ -93,6 +95,7 @@ if(UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
             ${SOURCE_FILE_SYSTEM_FILES}
             ${SOURCE_EXTERNAL_TASK_FILES}
             ${SOURCE_UPDATE_FILES}
+            ${SOURCE_SERVICE_FILES}
     )
     add_executable(MLA_C_App_Linux ${SOURCE_FILES_LINUX_APP})
     target_link_libraries(MLA_C_App_Linux PRIVATE ${CMAKE_DL_LIBS})
@@ -112,6 +115,7 @@ if (MLA_EMSDK_PATH AND NOT MLA_WASM_STANDALONE)
             ${SOURCE_FILES}
             ${SOURCE_FILE_SYSTEM_FILES}
             ${SOURCE_UPDATE_FILES}
+            ${SOURCE_SERVICE_FILES}
             ${SOURCE_TEST_FILES}
     )
     add_executable(MLA_C_Test_WASM_Single_Thread ${SOURCE_FILES_WASM_SINGLE_THREAD})
@@ -130,6 +134,7 @@ if (MLA_EMSDK_PATH AND NOT MLA_WASM_STANDALONE)
             ${SOURCE_UI_FILES}
             ${SOURCE_FILE_SYSTEM_FILES}
             ${SOURCE_UPDATE_FILES}
+            ${SOURCE_SERVICE_FILES}
     )
     add_executable(MLA_C_App_WASM ${SOURCE_FILES_WASM_APP})
     target_link_libraries(MLA_C_App_WASM)
@@ -147,6 +152,7 @@ if (MLA_WASM_STANDALONE OR MLA_EMSDK_PATH)
             ${SOURCE_FILES}
             ${SOURCE_FILE_SYSTEM_FILES}
             ${SOURCE_UPDATE_FILES}
+            ${SOURCE_SERVICE_FILES}
             ${SOURCE_TEST_FILES}
     )
     add_executable(MLA_C_Test_WASM_Single_Thread_Standalone ${SOURCE_FILES_WASM_SINGLE_THREAD_STANDALONE})
@@ -174,6 +180,7 @@ if(WIN32)
             ${SOURCE_FILE_SYSTEM_FILES}
             ${SOURCE_EXTERNAL_TASK_FILES}
             ${SOURCE_UPDATE_FILES}
+            ${SOURCE_SERVICE_FILES}
             ${SOURCE_TEST_FILES}
     )
     add_executable(MLA_C_Test_Windows_Single_Thread ${SOURCE_FILES_WINDOWS_SINGLE_THREAD})
@@ -195,6 +202,7 @@ if(WIN32)
             ${SOURCE_FILE_SYSTEM_FILES}
             ${SOURCE_EXTERNAL_TASK_FILES}
             ${SOURCE_UPDATE_FILES}
+            ${SOURCE_SERVICE_FILES}
             ${SOURCE_TEST_FILES}
     )
     add_executable(MLA_C_Test_Windows_Multi_Thread ${SOURCE_FILES_WINDOWS_MULTI_THREAD})
@@ -217,6 +225,7 @@ if(WIN32)
             ${SOURCE_FILE_SYSTEM_FILES}
             ${SOURCE_EXTERNAL_TASK_FILES}
             ${SOURCE_UPDATE_FILES}
+            ${SOURCE_SERVICE_FILES}
     )
     add_executable(MLA_C_App_Windows ${SOURCE_FILES_WINDOWS_APP})
     mla_enable_clang_tidy(MLA_C_App_Windows)
