@@ -116,7 +116,7 @@ inline void UpdateGetLastVersionHttpTest() {
     mla_http_server_set_timeout(server, 2000);
 
     if (mla_http_server_start(server, 2)) {
-        mla_update_provider_t provider = mla_update_provider_http_create(mla_string_const("test_app"), mla_string_const("http://127.0.0.1:41259"));
+        mla_update_provider_t provider = mla_update_provider_http_create(mla_string_empty(), mla_string_const("http://127.0.0.1:41259"));
         mla_string_t version = mla_string_empty();
         mla_bool_t success = mla_update_get_last_version(provider, version);
         assert_true(success, "HTTP get_last_version should succeed");

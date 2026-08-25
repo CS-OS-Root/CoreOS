@@ -102,4 +102,9 @@ set(SOURCE_UPDATE_FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/update/mla_update_cli_module.cpp
 )
 
+# Service source files
+set(SOURCE_SERVICE_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/lib/base-lib/core/service/mla_service.cpp
+)
+
 
