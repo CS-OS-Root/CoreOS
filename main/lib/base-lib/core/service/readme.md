@@ -8,8 +8,8 @@ The Service module (`core/service/`) provides a cross-platform interface to inst
   - `install`: Automatically resolves the currently running binary path, appends startup arguments if provided, and registers the service in the host OS init system (e.g., systemd unit files on Linux, Service Control Manager on Windows).
   - `uninstall`: Deregisters, removes, and cleans up the configured service entry for the application from the host system.
 - **`g_mla_service_platform`**: Global struct instance configured per target platform.
-- **`mla_service_install(service_name, service_args)`**: Helper API function.
-- **`mla_service_uninstall(service_name)`**: Helper API function.
+- **`mla_service_install(const mla_string_t &service_name, const mla_string_t &service_args = mla_string_empty())`**: Helper API function.
+- **`mla_service_uninstall(const mla_string_t &service_name)`**: Helper API function.
 
 ## Platform Implementations
 

@@ -12,22 +12,22 @@
 #include "../../lib/base-lib/test-support/Test/mla_test.h"
 
 void ServiceInvalidArgumentsTest() {
-    mla_int32_t res1 = mla_service_install(nullptr, nullptr);
-    assert_equal(res1, (mla_test_int32_t)MLA_SERVICE_ERROR_INVALID_ARGUMENT, "install with null service name must return invalid argument");
+    mla_int32_t res1 = mla_service_install(mla_string_empty(), mla_string_empty());
+    assert_equal(res1, (mla_test_int32_t)MLA_SERVICE_ERROR_INVALID_ARGUMENT, "install with empty service name must return invalid argument");
 
-    mla_int32_t res2 = mla_service_install("", nullptr);
-    assert_equal(res2, (mla_test_int32_t)MLA_SERVICE_ERROR_INVALID_ARGUMENT, "install with empty service name must return invalid argument");
+    mla_int32_t res2 = mla_service_install(mla_string_const(""), mla_string_empty());
+    assert_equal(res2, (mla_test_int32_t)MLA_SERVICE_ERROR_INVALID_ARGUMENT, "install with blank service name must return invalid argument");
 
-    mla_int32_t res3 = mla_service_uninstall(nullptr);
-    assert_equal(res3, (mla_test_int32_t)MLA_SERVICE_ERROR_INVALID_ARGUMENT, "uninstall with null service name must return invalid argument");
+    mla_int32_t res3 = mla_service_uninstall(mla_string_empty());
+    assert_equal(res3, (mla_test_int32_t)MLA_SERVICE_ERROR_INVALID_ARGUMENT, "uninstall with empty service name must return invalid argument");
 
-    mla_int32_t res4 = mla_service_uninstall("");
-    assert_equal(res4, (mla_test_int32_t)MLA_SERVICE_ERROR_INVALID_ARGUMENT, "uninstall with empty service name must return invalid argument");
+    mla_int32_t res4 = mla_service_uninstall(mla_string_const(""));
+    assert_equal(res4, (mla_test_int32_t)MLA_SERVICE_ERROR_INVALID_ARGUMENT, "uninstall with blank service name must return invalid argument");
 }
 
 void ServiceInstallAndUninstallFlowTest() {
-    const mla_char_t* service_name = "mla_test_daemon_full";
-    const mla_char_t* service_args = "--daemon --port 9090";
+    mla_string_t service_name = mla_string_const("mla_test_daemon_full");
+    mla_string_t service_args = mla_string_const("--daemon --port 9090");
 
     mla_int32_t install_res = mla_service_install(service_name, service_args);
     assert_equal(install_res, (mla_test_int32_t)MLA_SERVICE_SUCCESS, "Service install with args should return success");
@@ -37,9 +37,9 @@ void ServiceInstallAndUninstallFlowTest() {
 }
 
 void ServiceInstallWithoutArgsTest() {
-    const mla_char_t* service_name = "mla_test_daemon_noargs";
+    mla_string_t service_name = mla_string_const("mla_test_daemon_noargs");
 
-    mla_int32_t install_res = mla_service_install(service_name, nullptr);
+    mla_int32_t install_res = mla_service_install(service_name);
     assert_equal(install_res, (mla_test_int32_t)MLA_SERVICE_SUCCESS, "Service install without args should return success");
 
     mla_int32_t uninstall_res = mla_service_uninstall(service_name);
@@ -47,8 +47,8 @@ void ServiceInstallWithoutArgsTest() {
 }
 
 void ServiceApiWrapperTest() {
-    const mla_char_t* service_name = "mla_test_daemon_wrapper";
-    const mla_char_t* service_args = "--mode worker";
+    mla_string_t service_name = mla_string_const("mla_test_daemon_wrapper");
+    mla_string_t service_args = mla_string_const("--mode worker");
 
     mla_int32_t install_res = mla_service_install(service_name, service_args);
     assert_equal(install_res, (mla_test_int32_t)MLA_SERVICE_SUCCESS, "mla_service_install helper should return success");

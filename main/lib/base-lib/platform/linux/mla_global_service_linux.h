@@ -101,8 +101,14 @@ inline void mla_private_linux_exec_systemctl(const mla_char_t* const* p_Argv) {
     }
 }
 
-inline mla_int32_t mla_private_linux_service_install(const mla_char_t* p_ServiceName, const mla_char_t* p_ServiceArgs) {
-    if (p_ServiceName == nullptr || p_ServiceName[0] == '\0') {
+inline mla_int32_t mla_private_linux_service_install(const mla_string_t &p_ServiceName, const mla_string_t &p_ServiceArgs) {
+    if (mla_string_is_empty(p_ServiceName)) {
+        return MLA_SERVICE_ERROR_INVALID_ARGUMENT;
+    }
+
+    mla_c_string_t serviceNameCStr = mla_string_to_cString(p_ServiceName);
+    const mla_char_t* serviceName = mla_c_string_data(serviceNameCStr);
+    if (serviceName == nullptr || serviceName[0] == '\0') {
         return MLA_SERVICE_ERROR_INVALID_ARGUMENT;
     }
 
@@ -115,13 +121,15 @@ inline mla_int32_t mla_private_linux_service_install(const mla_char_t* p_Service
 
     char unit_path[2048];
     mla_bool_t is_user_mode = false;
-    if (!mla_private_linux_get_service_unit_path(p_ServiceName, unit_path, sizeof(unit_path), is_user_mode)) {
+    if (!mla_private_linux_get_service_unit_path(serviceName, unit_path, sizeof(unit_path), is_user_mode)) {
         return MLA_SERVICE_ERROR_SYSTEM;
     }
 
     char exec_start[2048];
-    if (p_ServiceArgs != nullptr && p_ServiceArgs[0] != '\0') {
-        snprintf(exec_start, sizeof(exec_start), "%s %s", exe_path, p_ServiceArgs);
+    if (!mla_string_is_empty(p_ServiceArgs)) {
+        mla_c_string_t argsCStr = mla_string_to_cString(p_ServiceArgs);
+        const mla_char_t* args = mla_c_string_data(argsCStr);
+        snprintf(exec_start, sizeof(exec_start), "%s %s", exe_path, args != nullptr ? args : "");
     } else {
         snprintf(exec_start, sizeof(exec_start), "%s", exe_path);
     }
@@ -139,7 +147,7 @@ inline mla_int32_t mla_private_linux_service_install(const mla_char_t* p_Service
         "Restart=on-failure\n\n"
         "[Install]\n"
         "WantedBy=default.target\n",
-        p_ServiceName,
+        serviceName,
         exec_start
     );
 
@@ -174,22 +182,28 @@ inline mla_int32_t mla_private_linux_service_install(const mla_char_t* p_Service
     return MLA_SERVICE_SUCCESS;
 }
 
-inline mla_int32_t mla_private_linux_service_uninstall(const mla_char_t* p_ServiceName) {
-    if (p_ServiceName == nullptr || p_ServiceName[0] == '\0') {
+inline mla_int32_t mla_private_linux_service_uninstall(const mla_string_t &p_ServiceName) {
+    if (mla_string_is_empty(p_ServiceName)) {
+        return MLA_SERVICE_ERROR_INVALID_ARGUMENT;
+    }
+
+    mla_c_string_t serviceNameCStr = mla_string_to_cString(p_ServiceName);
+    const mla_char_t* serviceName = mla_c_string_data(serviceNameCStr);
+    if (serviceName == nullptr || serviceName[0] == '\0') {
         return MLA_SERVICE_ERROR_INVALID_ARGUMENT;
     }
 
     char unit_path[2048];
     mla_bool_t is_user_mode = false;
-    if (!mla_private_linux_get_service_unit_path(p_ServiceName, unit_path, sizeof(unit_path), is_user_mode)) {
+    if (!mla_private_linux_get_service_unit_path(serviceName, unit_path, sizeof(unit_path), is_user_mode)) {
         return MLA_SERVICE_ERROR_SYSTEM;
     }
 
     if (is_user_mode) {
-        const char* const stop_args[] = {"systemctl", "--user", "stop", p_ServiceName, nullptr};
+        const char* const stop_args[] = {"systemctl", "--user", "stop", serviceName, nullptr};
         mla_private_linux_exec_systemctl(stop_args);
     } else {
-        const char* const stop_args[] = {"systemctl", "stop", p_ServiceName, nullptr};
+        const char* const stop_args[] = {"systemctl", "stop", serviceName, nullptr};
         mla_private_linux_exec_systemctl(stop_args);
     }
 

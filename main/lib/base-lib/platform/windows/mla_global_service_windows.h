@@ -13,8 +13,14 @@
 #define MLA_SERVICE_SUPPORTED 1
 #endif
 
-inline mla_int32_t mla_private_windows_service_install(const mla_char_t* p_ServiceName, const mla_char_t* p_ServiceArgs) {
-    if (p_ServiceName == nullptr || p_ServiceName[0] == '\0') {
+inline mla_int32_t mla_private_windows_service_install(const mla_string_t &p_ServiceName, const mla_string_t &p_ServiceArgs) {
+    if (mla_string_is_empty(p_ServiceName)) {
+        return MLA_SERVICE_ERROR_INVALID_ARGUMENT;
+    }
+
+    mla_c_string_t serviceNameCStr = mla_string_to_cString(p_ServiceName);
+    const mla_char_t* serviceName = mla_c_string_data(serviceNameCStr);
+    if (serviceName == nullptr || serviceName[0] == '\0') {
         return MLA_SERVICE_ERROR_INVALID_ARGUMENT;
     }
 
@@ -25,8 +31,10 @@ inline mla_int32_t mla_private_windows_service_install(const mla_char_t* p_Servi
     }
 
     char cmdline[MAX_PATH * 2];
-    if (p_ServiceArgs != nullptr && p_ServiceArgs[0] != '\0') {
-        snprintf(cmdline, sizeof(cmdline), "\"%s\" %s", exe_path, p_ServiceArgs);
+    if (!mla_string_is_empty(p_ServiceArgs)) {
+        mla_c_string_t argsCStr = mla_string_to_cString(p_ServiceArgs);
+        const mla_char_t* args = mla_c_string_data(argsCStr);
+        snprintf(cmdline, sizeof(cmdline), "\"%s\" %s", exe_path, args != nullptr ? args : "");
     } else {
         snprintf(cmdline, sizeof(cmdline), "\"%s\"", exe_path);
     }
@@ -45,8 +53,8 @@ inline mla_int32_t mla_private_windows_service_install(const mla_char_t* p_Servi
 
     SC_HANDLE svc = CreateServiceA(
         scm,
-        p_ServiceName,
-        p_ServiceName,
+        serviceName,
+        serviceName,
         SERVICE_ALL_ACCESS,
         SERVICE_WIN32_OWN_PROCESS,
         SERVICE_AUTO_START,
@@ -73,8 +81,14 @@ inline mla_int32_t mla_private_windows_service_install(const mla_char_t* p_Servi
     return MLA_SERVICE_SUCCESS;
 }
 
-inline mla_int32_t mla_private_windows_service_uninstall(const mla_char_t* p_ServiceName) {
-    if (p_ServiceName == nullptr || p_ServiceName[0] == '\0') {
+inline mla_int32_t mla_private_windows_service_uninstall(const mla_string_t &p_ServiceName) {
+    if (mla_string_is_empty(p_ServiceName)) {
+        return MLA_SERVICE_ERROR_INVALID_ARGUMENT;
+    }
+
+    mla_c_string_t serviceNameCStr = mla_string_to_cString(p_ServiceName);
+    const mla_char_t* serviceName = mla_c_string_data(serviceNameCStr);
+    if (serviceName == nullptr || serviceName[0] == '\0') {
         return MLA_SERVICE_ERROR_INVALID_ARGUMENT;
     }
 
@@ -87,7 +101,7 @@ inline mla_int32_t mla_private_windows_service_uninstall(const mla_char_t* p_Ser
         return MLA_SERVICE_ERROR_SYSTEM;
     }
 
-    SC_HANDLE svc = OpenServiceA(scm, p_ServiceName, SERVICE_STOP | DELETE);
+    SC_HANDLE svc = OpenServiceA(scm, serviceName, SERVICE_STOP | DELETE);
     if (svc == NULL) {
         DWORD err = GetLastError();
         CloseServiceHandle(scm);
