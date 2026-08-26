@@ -21,6 +21,7 @@
 typedef struct mla_service_platform_t {
     mla_int32_t (*install)(const mla_string_t &service_name, const mla_string_t &service_args);
     mla_int32_t (*uninstall)(const mla_string_t &service_name);
+    mla_string_t (*get_install_summary)(const mla_string_t &service_name, const mla_string_t &service_args);
 } mla_service_platform_t;
 
 /**
@@ -49,5 +50,14 @@ mla_int32_t mla_service_install(const mla_string_t &p_ServiceName, const mla_str
  * @return mla_int32_t 0 (MLA_SERVICE_SUCCESS) on success, or a non-zero error code.
  */
 mla_int32_t mla_service_uninstall(const mla_string_t &p_ServiceName);
+
+/**
+ * @brief Returns platform-specific service management instructions or installation summary.
+ *
+ * @param p_ServiceName The unique name identifier for the service.
+ * @param p_ServiceArgs Optional startup arguments used when the service was configured.
+ * @return mla_string_t Platform-specific formatted instructions, or empty string if unsupported.
+ */
+mla_string_t mla_service_get_install_summary(const mla_string_t &p_ServiceName, const mla_string_t &p_ServiceArgs = mla_string_empty());
 
 #endif // MLA_SERVICE_H

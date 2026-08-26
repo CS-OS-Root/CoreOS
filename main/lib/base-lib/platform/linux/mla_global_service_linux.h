@@ -6,6 +6,7 @@
 #define MLA_GLOBAL_SERVICE_LINUX_H
 
 #include "../../core/service/mla_service.h"
+#include "../../core/system/mla_string_builder.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -15,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <pwd.h>
 
 #ifndef MLA_SERVICE_SUPPORTED
 #define MLA_SERVICE_SUPPORTED 1
@@ -68,10 +70,32 @@ inline mla_bool_t mla_private_linux_get_service_unit_path(const mla_char_t* p_Se
     }
 
     p_OutIsUserMode = true;
+
+    // 1. Check $XDG_CONFIG_HOME
+    const char* xdg_config = getenv("XDG_CONFIG_HOME");
+    if (xdg_config != nullptr && xdg_config[0] != '\0') {
+        char dir[1024];
+        snprintf(dir, sizeof(dir), "%s/systemd/user", xdg_config);
+        mla_private_linux_create_dir_recursive(dir);
+        int written = snprintf(p_OutPath, p_OutSize, "%s/%s.service", dir, p_ServiceName);
+        return written > 0 && mla_s_cast<mla_size_t>(written) < p_OutSize;
+    }
+
+    // 2. Check $HOME
     const char* home = getenv("HOME");
     if (home != nullptr && home[0] != '\0') {
         char dir[1024];
         snprintf(dir, sizeof(dir), "%s/.config/systemd/user", home);
+        mla_private_linux_create_dir_recursive(dir);
+        int written = snprintf(p_OutPath, p_OutSize, "%s/%s.service", dir, p_ServiceName);
+        return written > 0 && mla_s_cast<mla_size_t>(written) < p_OutSize;
+    }
+
+    // 3. Query user database from /etc/passwd via getpwuid
+    struct passwd* pw = getpwuid(geteuid());
+    if (pw != nullptr && pw->pw_dir != nullptr && pw->pw_dir[0] != '\0') {
+        char dir[1024];
+        snprintf(dir, sizeof(dir), "%s/.config/systemd/user", pw->pw_dir);
         mla_private_linux_create_dir_recursive(dir);
         int written = snprintf(p_OutPath, p_OutSize, "%s/%s.service", dir, p_ServiceName);
         return written > 0 && mla_s_cast<mla_size_t>(written) < p_OutSize;
@@ -93,6 +117,17 @@ inline void mla_private_linux_exec_systemctl(const mla_char_t* const* p_Argv) {
             dup2(dev_null, STDERR_FILENO);
             close(dev_null);
         }
+
+        // If XDG_RUNTIME_DIR is not set for user-level systemctl, check standard /run/user/<uid>
+        if (getenv("XDG_RUNTIME_DIR") == nullptr) {
+            char runtime_dir[64];
+            snprintf(runtime_dir, sizeof(runtime_dir), "/run/user/%u", mla_s_cast<unsigned int>(getuid()));
+            struct stat st;
+            if (stat(runtime_dir, &st) == 0 && S_ISDIR(st.st_mode)) {
+                setenv("XDG_RUNTIME_DIR", runtime_dir, 0);
+            }
+        }
+
         execvp(p_Argv[0], mla_c_cast<char* const*>(p_Argv));
         _exit(1);
     } else if (pid > 0) {
@@ -134,6 +169,11 @@ inline mla_int32_t mla_private_linux_service_install(const mla_string_t &p_Servi
         snprintf(exec_start, sizeof(exec_start), "%s", exe_path);
     }
 
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) == nullptr || cwd[0] == '\0') {
+        snprintf(cwd, sizeof(cwd), "/");
+    }
+
     char unit_content[4096];
     int content_len = snprintf(
         unit_content,
@@ -143,11 +183,13 @@ inline mla_int32_t mla_private_linux_service_install(const mla_string_t &p_Servi
         "After=network.target\n\n"
         "[Service]\n"
         "Type=simple\n"
+        "WorkingDirectory=%s\n"
         "ExecStart=%s\n"
         "Restart=on-failure\n\n"
         "[Install]\n"
         "WantedBy=default.target\n",
         serviceName,
+        cwd,
         exec_start
     );
 
@@ -225,9 +267,59 @@ inline mla_int32_t mla_private_linux_service_uninstall(const mla_string_t &p_Ser
     return MLA_SERVICE_SUCCESS;
 }
 
+inline mla_string_t mla_private_linux_service_get_install_summary(const mla_string_t &p_ServiceName, const mla_string_t &p_ServiceArgs) {
+    mla_bool_t is_user_mode = (geteuid() != 0);
+
+    mla_string_builder_t sb = mla_string_builder_empty();
+    if (is_user_mode) {
+        mla_string_builder_append(sb, mla_string_const("Successfully installed user service '"));
+        mla_string_builder_append(sb, p_ServiceName);
+        if (!mla_string_is_empty(p_ServiceArgs)) {
+            mla_string_builder_append(sb, mla_string_const("' with arguments '"));
+            mla_string_builder_append(sb, p_ServiceArgs);
+            mla_string_builder_append(sb, mla_string_const("'.\n\n"));
+        } else {
+            mla_string_builder_append(sb, mla_string_const("'.\n\n"));
+        }
+        mla_string_builder_append(sb, mla_string_const("Service management commands:\n"));
+        mla_string_builder_append(sb, mla_string_const("  Start:   systemctl --user start "));
+        mla_string_builder_append(sb, p_ServiceName);
+        mla_string_builder_append(sb, mla_string_const("\n  Stop:    systemctl --user stop "));
+        mla_string_builder_append(sb, p_ServiceName);
+        mla_string_builder_append(sb, mla_string_const("\n  Status:  systemctl --user status "));
+        mla_string_builder_append(sb, p_ServiceName);
+        mla_string_builder_append(sb, mla_string_const("\n  Enable:  systemctl --user enable "));
+        mla_string_builder_append(sb, p_ServiceName);
+        mla_string_builder_append(sb, mla_string_const("\n\nNote: Installed in user scope (~/.config/systemd/user/). Use 'systemctl --user' instead of 'sudo systemctl'.\n"));
+    } else {
+        mla_string_builder_append(sb, mla_string_const("Successfully installed system service '"));
+        mla_string_builder_append(sb, p_ServiceName);
+        if (!mla_string_is_empty(p_ServiceArgs)) {
+            mla_string_builder_append(sb, mla_string_const("' with arguments '"));
+            mla_string_builder_append(sb, p_ServiceArgs);
+            mla_string_builder_append(sb, mla_string_const("'.\n\n"));
+        } else {
+            mla_string_builder_append(sb, mla_string_const("'.\n\n"));
+        }
+        mla_string_builder_append(sb, mla_string_const("Service management commands:\n"));
+        mla_string_builder_append(sb, mla_string_const("  Start:   sudo systemctl start "));
+        mla_string_builder_append(sb, p_ServiceName);
+        mla_string_builder_append(sb, mla_string_const("\n  Stop:    sudo systemctl stop "));
+        mla_string_builder_append(sb, p_ServiceName);
+        mla_string_builder_append(sb, mla_string_const("\n  Status:  sudo systemctl status "));
+        mla_string_builder_append(sb, p_ServiceName);
+        mla_string_builder_append(sb, mla_string_const("\n  Enable:  sudo systemctl enable "));
+        mla_string_builder_append(sb, p_ServiceName);
+        mla_string_builder_append(sb, mla_string_const("\n"));
+    }
+
+    return mla_string_builder_to_string(sb);
+}
+
 const mla_service_platform_t g_mla_service_platform = {
     mla_private_linux_service_install,
-    mla_private_linux_service_uninstall
+    mla_private_linux_service_uninstall,
+    mla_private_linux_service_get_install_summary
 };
 
 #endif // MLA_GLOBAL_SERVICE_LINUX_H

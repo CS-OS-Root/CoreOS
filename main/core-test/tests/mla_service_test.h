@@ -57,6 +57,18 @@ void ServiceApiWrapperTest() {
     assert_equal(uninstall_res, (mla_test_int32_t)MLA_SERVICE_SUCCESS, "mla_service_uninstall helper should return success");
 }
 
+void ServiceGetInstallSummaryTest() {
+    mla_string_t empty_summary = mla_service_get_install_summary(mla_string_empty());
+    assert_true(mla_string_is_empty(empty_summary), "Empty service name must yield empty summary");
+
+    mla_string_t service_name = mla_string_const("mla_test_service_summary");
+    mla_string_t service_args = mla_string_const("--port 8080");
+    mla_string_t summary = mla_service_get_install_summary(service_name, service_args);
+    assert_false(mla_string_is_empty(summary), "Summary for valid service must not be empty");
+    assert_true(mla_string_contains(summary, service_name), "Summary must contain service name");
+    assert_true(mla_string_contains(summary, service_args), "Summary must contain service args");
+}
+
 void RegisterServiceTests(mla_test_executor_t &p_TestExecutor) {
     mla_test_t test1 = mla_test("ServiceInvalidArguments", test_category, ServiceInvalidArgumentsTest);
     mla_test_executor_register_test(p_TestExecutor, test1);
@@ -69,6 +81,9 @@ void RegisterServiceTests(mla_test_executor_t &p_TestExecutor) {
 
     mla_test_t test4 = mla_test("ServiceApiWrapper", test_category, ServiceApiWrapperTest);
     mla_test_executor_register_test(p_TestExecutor, test4);
+
+    mla_test_t test5 = mla_test("ServiceGetInstallSummary", test_category, ServiceGetInstallSummaryTest);
+    mla_test_executor_register_test(p_TestExecutor, test5);
 }
 
 #endif // MLA_SERVICE_SUPPORTED

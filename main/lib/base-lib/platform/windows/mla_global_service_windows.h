@@ -6,6 +6,7 @@
 #define MLA_GLOBAL_SERVICE_WINDOWS_H
 
 #include "../../core/service/mla_service.h"
+#include "../../core/system/mla_string_builder.h"
 #include <windows.h>
 #include <stdio.h>
 
@@ -30,11 +31,20 @@ inline mla_int32_t mla_private_windows_service_install(const mla_string_t &p_Ser
         return MLA_SERVICE_ERROR_SYSTEM;
     }
 
-    char cmdline[MAX_PATH * 2];
+    char cmdline[MAX_PATH * 3];
+    char cwd[MAX_PATH];
+    DWORD cwd_len = GetCurrentDirectoryA(MAX_PATH, cwd);
+
     if (!mla_string_is_empty(p_ServiceArgs)) {
         mla_c_string_t argsCStr = mla_string_to_cString(p_ServiceArgs);
         const mla_char_t* args = mla_c_string_data(argsCStr);
-        snprintf(cmdline, sizeof(cmdline), "\"%s\" %s", exe_path, args != nullptr ? args : "");
+        if (strstr(args != nullptr ? args : "", "--working-dir") == nullptr && cwd_len > 0) {
+            snprintf(cmdline, sizeof(cmdline), "\"%s\" %s --working-dir \"%s\"", exe_path, args != nullptr ? args : "", cwd);
+        } else {
+            snprintf(cmdline, sizeof(cmdline), "\"%s\" %s", exe_path, args != nullptr ? args : "");
+        }
+    } else if (cwd_len > 0) {
+        snprintf(cmdline, sizeof(cmdline), "\"%s\" --working-dir \"%s\"", exe_path, cwd);
     } else {
         snprintf(cmdline, sizeof(cmdline), "\"%s\"", exe_path);
     }
@@ -131,9 +141,35 @@ inline mla_int32_t mla_private_windows_service_uninstall(const mla_string_t &p_S
     return MLA_SERVICE_ERROR_SYSTEM;
 }
 
+inline mla_string_t mla_private_windows_service_get_install_summary(const mla_string_t &p_ServiceName, const mla_string_t &p_ServiceArgs) {
+    mla_string_builder_t sb = mla_string_builder_empty();
+    mla_string_builder_append(sb, mla_string_const("Successfully installed Windows service '"));
+    mla_string_builder_append(sb, p_ServiceName);
+    if (!mla_string_is_empty(p_ServiceArgs)) {
+        mla_string_builder_append(sb, mla_string_const("' with arguments '"));
+        mla_string_builder_append(sb, p_ServiceArgs);
+        mla_string_builder_append(sb, mla_string_const("'.\n\n"));
+    } else {
+        mla_string_builder_append(sb, mla_string_const("'.\n\n"));
+    }
+    mla_string_builder_append(sb, mla_string_const("Service management commands:\n"));
+    mla_string_builder_append(sb, mla_string_const("  Start:   sc.exe start "));
+    mla_string_builder_append(sb, p_ServiceName);
+    mla_string_builder_append(sb, mla_string_const("\n  Stop:    sc.exe stop "));
+    mla_string_builder_append(sb, p_ServiceName);
+    mla_string_builder_append(sb, mla_string_const("\n  Status:  sc.exe query "));
+    mla_string_builder_append(sb, p_ServiceName);
+    mla_string_builder_append(sb, mla_string_const("\n  Delete:  sc.exe delete "));
+    mla_string_builder_append(sb, p_ServiceName);
+    mla_string_builder_append(sb, mla_string_const("\n"));
+
+    return mla_string_builder_to_string(sb);
+}
+
 const mla_service_platform_t g_mla_service_platform = {
     mla_private_windows_service_install,
-    mla_private_windows_service_uninstall
+    mla_private_windows_service_uninstall,
+    mla_private_windows_service_get_install_summary
 };
 
 #endif // MLA_GLOBAL_SERVICE_WINDOWS_H

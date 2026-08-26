@@ -51,6 +51,7 @@ The Service module (`core/service/`) provides a cross-platform abstraction to in
 typedef struct mla_service_platform_t {
     mla_int32_t (*install)(const mla_string_t &service_name, const mla_string_t &service_args);
     mla_int32_t (*uninstall)(const mla_string_t &service_name);
+    mla_string_t (*get_install_summary)(const mla_string_t &service_name, const mla_string_t &service_args);
 } mla_service_platform_t;
 
 extern const mla_service_platform_t g_mla_service_platform;
@@ -68,6 +69,9 @@ mla_int32_t mla_service_install(const mla_string_t &p_ServiceName, const mla_str
 
 // Uninstalls and removes the specified service entry
 mla_int32_t mla_service_uninstall(const mla_string_t &p_ServiceName);
+
+// Returns platform-specific service management instructions / installation summary
+mla_string_t mla_service_get_install_summary(const mla_string_t &p_ServiceName, const mla_string_t &p_ServiceArgs = mla_string_empty());
 ```
 
 ---
@@ -127,6 +131,7 @@ if (res == MLA_SERVICE_SUCCESS) {
 
   [Service]
   Type=simple
+  WorkingDirectory=<CurrentWorkingDirectory>
   ExecStart=<ResolvedExecutablePath> <OptionalArgs>
   Restart=on-failure
 
@@ -134,12 +139,12 @@ if (res == MLA_SERVICE_SUCCESS) {
   WantedBy=default.target
   ```
 - If running as `root` (`geteuid() == 0`): writes to `/etc/systemd/system/<ServiceName>.service` and runs `systemctl daemon-reload`.
-- If running as regular user: writes to `~/.config/systemd/user/<ServiceName>.service` and runs `systemctl --user daemon-reload`.
+- If running as regular user: writes to `~/.config/systemd/user/<ServiceName>.service` (resolving `$XDG_CONFIG_HOME`, `$HOME`, or user home via `getpwuid`) and runs `systemctl --user daemon-reload` (with `XDG_RUNTIME_DIR` fallback).
 - Uninstallation stops the unit, unlinks the unit file, and executes daemon reload.
 
 ### Windows (`SCM`)
 - Connects to Service Control Manager via `OpenSCManagerA`.
-- Creates service with `SERVICE_WIN32_OWN_PROCESS`, `SERVICE_AUTO_START`, and the quoted executable command line.
+- Creates service with `SERVICE_WIN32_OWN_PROCESS`, `SERVICE_AUTO_START`, and the quoted executable command line (automatically appending `--working-dir "<CurrentWorkingDirectory>"` if not explicitly set).
 - Uninstallation opens the service, sends `SERVICE_CONTROL_STOP`, and calls `DeleteService`.
 
 ---
