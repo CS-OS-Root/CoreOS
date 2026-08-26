@@ -17,7 +17,7 @@ inline mla_update_error_t mla_private_update_windows_upgrade_to_version(mla_stre
     }
 
     char exe_path_buf[MAX_PATH];
-    DWORD len = GetModuleFileNameA(NULL, exe_path_buf, MAX_PATH);
+    DWORD len = GetModuleFileNameA(nullptr, exe_path_buf, MAX_PATH);
     if (len == 0) {
         return MLA_UPDATE_ERROR_NOT_SUPPORTED;
     }
@@ -49,9 +49,8 @@ inline mla_update_error_t mla_private_update_windows_upgrade_to_version(mla_stre
         out.write(out, 0, read_bytes, buffer);
     }
 
-    if (fs.close_file != nullptr) {
-        fs.close_file(fs, out_fs_stream);
-    }
+    // Close the Steam
+    out_fs_stream = mla_file_system_stream_empty();
 
     mla_string_t cmdline = mla_string_concat(temp_binary_path, mla_string_const(" --mla-apply-update \""));
     cmdline = mla_string_concat(cmdline, current_exe_path);
@@ -88,7 +87,7 @@ inline mla_bool_t mla_update_check_and_apply_pending_update(int argc, char** arg
     }
 
     char own_exe_buf[MAX_PATH];
-    DWORD len = GetModuleFileNameA(NULL, own_exe_buf, MAX_PATH);
+    DWORD len = GetModuleFileNameA(nullptr, own_exe_buf, MAX_PATH);
     if (len == 0) {
         return false;
     }
@@ -112,10 +111,9 @@ inline mla_bool_t mla_update_check_and_apply_pending_update(int argc, char** arg
         out.write(out, 0, read_bytes, buffer);
     }
 
-    if (fs.close_file != nullptr) {
-        fs.close_file(fs, in_fs_stream);
-        fs.close_file(fs, out_fs_stream);
-    }
+    // Close the files
+    in_fs_stream = mla_file_system_stream_empty();
+    out_fs_stream = mla_file_system_stream_empty();
 
     mla_string_t restart_cmdline = target_path;
     mla_external_task_t task = mla_external_task_create(restart_cmdline);

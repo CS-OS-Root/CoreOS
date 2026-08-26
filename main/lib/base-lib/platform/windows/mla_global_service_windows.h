@@ -26,7 +26,7 @@ inline mla_int32_t mla_private_windows_service_install(const mla_string_t &p_Ser
     }
 
     char exe_path[MAX_PATH];
-    DWORD len = GetModuleFileNameA(NULL, exe_path, MAX_PATH);
+    DWORD len = GetModuleFileNameA(nullptr, exe_path, MAX_PATH);
     if (len == 0) {
         return MLA_SERVICE_ERROR_SYSTEM;
     }
@@ -49,11 +49,11 @@ inline mla_int32_t mla_private_windows_service_install(const mla_string_t &p_Ser
         snprintf(cmdline, sizeof(cmdline), "\"%s\"", exe_path);
     }
 
-    SC_HANDLE scm = OpenSCManagerA(NULL, NULL, SC_MANAGER_ALL_ACCESS);
-    if (scm == NULL) {
-        scm = OpenSCManagerA(NULL, NULL, SC_MANAGER_CREATE_SERVICE);
+    SC_HANDLE scm = OpenSCManagerA(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
+    if (scm == nullptr) {
+        scm = OpenSCManagerA(nullptr, nullptr, SC_MANAGER_CREATE_SERVICE);
     }
-    if (scm == NULL) {
+    if (scm == nullptr) {
         DWORD err = GetLastError();
         if (err == ERROR_ACCESS_DENIED) {
             return MLA_SERVICE_ERROR_PERMISSION_DENIED;
@@ -70,14 +70,14 @@ inline mla_int32_t mla_private_windows_service_install(const mla_string_t &p_Ser
         SERVICE_AUTO_START,
         SERVICE_ERROR_NORMAL,
         cmdline,
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-        NULL
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr,
+        nullptr
     );
 
-    if (svc == NULL) {
+    if (svc == nullptr) {
         DWORD err = GetLastError();
         CloseServiceHandle(scm);
         if (err == ERROR_ACCESS_DENIED) {
@@ -92,6 +92,7 @@ inline mla_int32_t mla_private_windows_service_install(const mla_string_t &p_Ser
 }
 
 inline mla_int32_t mla_private_windows_service_uninstall(const mla_string_t &p_ServiceName) {
+
     if (mla_string_is_empty(p_ServiceName)) {
         return MLA_SERVICE_ERROR_INVALID_ARGUMENT;
     }
@@ -102,8 +103,8 @@ inline mla_int32_t mla_private_windows_service_uninstall(const mla_string_t &p_S
         return MLA_SERVICE_ERROR_INVALID_ARGUMENT;
     }
 
-    SC_HANDLE scm = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
-    if (scm == NULL) {
+    SC_HANDLE scm = OpenSCManagerA(nullptr, nullptr, SC_MANAGER_CONNECT);
+    if (scm == nullptr) {
         DWORD err = GetLastError();
         if (err == ERROR_ACCESS_DENIED) {
             return MLA_SERVICE_ERROR_PERMISSION_DENIED;
@@ -112,7 +113,7 @@ inline mla_int32_t mla_private_windows_service_uninstall(const mla_string_t &p_S
     }
 
     SC_HANDLE svc = OpenServiceA(scm, serviceName, SERVICE_STOP | DELETE);
-    if (svc == NULL) {
+    if (svc == nullptr) {
         DWORD err = GetLastError();
         CloseServiceHandle(scm);
         if (err == ERROR_SERVICE_DOES_NOT_EXIST) {
@@ -127,7 +128,7 @@ inline mla_int32_t mla_private_windows_service_uninstall(const mla_string_t &p_S
     SERVICE_STATUS status;
     ControlService(svc, SERVICE_CONTROL_STOP, &status);
     BOOL deleted = DeleteService(svc);
-    DWORD err = deleted ? ERROR_SUCCESS : GetLastError();
+    DWORD err = deleted == TRUE ? ERROR_SUCCESS : GetLastError();
 
     CloseServiceHandle(svc);
     CloseServiceHandle(scm);
@@ -142,6 +143,7 @@ inline mla_int32_t mla_private_windows_service_uninstall(const mla_string_t &p_S
 }
 
 inline mla_string_t mla_private_windows_service_get_install_summary(const mla_string_t &p_ServiceName, const mla_string_t &p_ServiceArgs) {
+
     mla_string_builder_t sb = mla_string_builder_empty();
     mla_string_builder_append(sb, mla_string_const("Successfully installed Windows service '"));
     mla_string_builder_append(sb, p_ServiceName);
